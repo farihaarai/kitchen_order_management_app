@@ -1,9 +1,9 @@
-import 'package:kitchen_order_mgmt_app/models/menu_item.dart';
+import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 
 class Order {
   final String id;
   final int tableNumber;
-  final List<MenuItem> items;
+  final List<CartItem> items;
   final DateTime time;
 
   Order({
