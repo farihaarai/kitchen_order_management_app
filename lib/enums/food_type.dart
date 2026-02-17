@@ -1,0 +1,1 @@
+enum FoodType { veg, nonVeg }
