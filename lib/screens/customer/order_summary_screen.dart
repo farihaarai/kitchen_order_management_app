@@ -90,7 +90,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       items: widget.cartItems,
       time: DateTime.now(),
     );
-    context.read<OrderBloc>().add(PlaceOrder(order));
+    context.read<OrderBloc>().add(PlaceOrder(order: order));
     Navigator.pop(context, true);
     print("Order Placed");
   }
