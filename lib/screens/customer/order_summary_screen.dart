@@ -43,9 +43,13 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 itemCount: widget.cartItems.length,
                 itemBuilder: (context, index) {
                   final item = widget.cartItems[index];
+                  final itemTotal = item.item.price * item.quantity;
                   return ListTile(
-                    title: Text(item.item.name),
-                    trailing: Text("${item.item.price} x ${item.quantity}"),
+                    title: Text("${item.item.name} x ${item.quantity}"),
+                    trailing: Text(
+                      "₹ ${itemTotal.toStringAsFixed(0)}",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   );
                 },
               ),

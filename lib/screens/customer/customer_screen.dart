@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kitchen_order_mgmt_app/blocs/order/order_bloc.dart';
+import 'package:kitchen_order_mgmt_app/blocs/order/order_state.dart';
 import 'package:kitchen_order_mgmt_app/core/data/menu_data.dart';
+import 'package:kitchen_order_mgmt_app/enums/order_status.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
 import 'package:kitchen_order_mgmt_app/widgets/menu_item_tile.dart';
@@ -14,7 +18,7 @@ class CustomerScreen extends StatefulWidget {
 
 class _CustomerScreenState extends State<CustomerScreen> {
   Map<String, int> quantities = {};
-  bool showReadyBar = false;
+  // bool showReadyBar = false;
   int getQuantity(String id) {
     return quantities[id] ?? 0;
   }
@@ -45,45 +49,80 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Menu")),
-      body: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: menuItems.length,
-                itemBuilder: (context, index) {
-                  final item = menuItems[index];
+    return BlocBuilder<OrderBloc, OrderState>(
+      builder: (context, state) {
+        OrderStatus? tableStatus;
 
-                  return MenuItemTile(
-                    item: item,
-                    quantity: getQuantity(item.id),
-                    onIncrease: () => increase(item.id),
-                    onDecrease: () => decrease(item.id),
-                  );
-                },
-              ),
+        final tableOrders = state.orders
+            .where((order) => order.tableNumber == widget.tableNo)
+            .toList();
+
+        if (tableOrders.isNotEmpty) {
+          // Get latest order of this table
+          tableOrders.sort((a, b) => b.time.compareTo(a.time));
+          tableStatus = tableOrders.first.status;
+        }
+        return Scaffold(
+          appBar: AppBar(title: Text("Menu")),
+          body: Padding(
+            padding: EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Text("Table No.: ${widget.tableNo}"),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: menuItems.length,
+                    itemBuilder: (context, index) {
+                      final item = menuItems[index];
+
+                      return MenuItemTile(
+                        item: item,
+                        quantity: getQuantity(item.id),
+                        onIncrease: () => increase(item.id),
+                        onDecrease: () => decrease(item.id),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: showReadyBar
-          ? ReadyBar()
-          : quantities.isNotEmpty
-          ? ViewOrderBar()
-          : null,
+          ),
+          bottomNavigationBar: tableStatus == OrderStatus.ready
+              ? readyBar()
+              : tableStatus == OrderStatus.preparing
+              ? preparingBar()
+              : quantities.isNotEmpty
+              ? viewOrderBar()
+              : null,
+        );
+      },
     );
   }
 
-  Widget ReadyBar() {
+  Widget preparingBar() {
+    return Container(
+      height: 60,
+      color: Colors.orange,
+      child: Center(
+        child: Text(
+          "Your order is being prepared",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget readyBar() {
     return Container(
       height: 60,
       color: Colors.green,
       child: Center(
         child: Text(
-          "Order is getting ready",
+          "Order is ready",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -94,7 +133,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
     );
   }
 
-  Widget ViewOrderBar() {
+  Widget viewOrderBar() {
     final totalItems = getTotalItems();
 
     return Container(
@@ -123,7 +162,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
               if (result == true) {
                 setState(() {
                   quantities.clear();
-                  showReadyBar = true;
+                  // showReadyBar = true;
                 });
               }
             },
