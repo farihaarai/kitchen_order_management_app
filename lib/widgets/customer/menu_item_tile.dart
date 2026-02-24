@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/enums/food_type.dart';
 import 'package:kitchen_order_mgmt_app/models/menu_item.dart';
 
 class MenuItemTile extends StatelessWidget {

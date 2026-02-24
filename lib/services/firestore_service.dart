@@ -43,4 +43,20 @@ class FirestoreService {
         .orderBy('time', descending: true)
         .snapshots();
   }
+
+  Stream<QuerySnapshot> getActiveOrdersStream() {
+    return _db
+        .collection('orders')
+        .where('status', whereIn: ['pending', 'preparing'])
+        .orderBy('time', descending: true)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getCompletedOrdersStream() {
+    return _db
+        .collection('orders')
+        .where('status', isEqualTo: 'ready')
+        .orderBy('time', descending: true)
+        .snapshots();
+  }
 }

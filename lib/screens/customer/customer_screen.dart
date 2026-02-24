@@ -4,7 +4,7 @@ import 'package:kitchen_order_mgmt_app/core/data/menu_data.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
-import 'package:kitchen_order_mgmt_app/widgets/menu_item_tile.dart';
+import 'package:kitchen_order_mgmt_app/widgets/customer/menu_item_tile.dart';
 
 class CustomerScreen extends StatefulWidget {
   final int tableNo;
