@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "146899159029",
+    "project_id": "kitchen-order-app",
+    "storage_bucket": "kitchen-order-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:146899159029:android:f1090b87fde4880facc2bc",
+        "android_client_info": {
+          "package_name": "com.example.kitchen_order_mgmt_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuQGoyeeXHhf7_XQVQpF4_AOGyAAqAjow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

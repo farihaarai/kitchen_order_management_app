@@ -4,6 +4,7 @@ import 'package:kitchen_order_mgmt_app/blocs/order/order_bloc.dart';
 import 'package:kitchen_order_mgmt_app/blocs/order/order_event.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/models/order.dart';
+import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -29,6 +30,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     return total;
   }
 
+  bool _isPlacing = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,15 +89,31 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     );
   }
 
-  void placeOrder() {
-    final order = Order(
-      id: DateTime.now().toString(),
-      tableNumber: widget.tableNo,
-      items: widget.cartItems,
-      time: DateTime.now(),
-    );
-    context.read<OrderBloc>().add(PlaceOrder(order: order));
-    Navigator.pop(context, true);
-    print("Order Placed");
+  void placeOrder() async {
+    if (_isPlacing) return;
+    if (widget.cartItems.isEmpty) return;
+
+    setState(() {
+      _isPlacing = true;
+    });
+
+    try {
+      final order = Order(
+        id: DateTime.now().toString(),
+        tableNumber: widget.tableNo,
+        items: widget.cartItems,
+        time: DateTime.now(),
+      );
+
+      await FirestoreService().addOrder(order);
+
+      print("Order Placed Successfully");
+      Navigator.pop(context, true);
+    } catch (e) {
+      print("Error placing order: $e");
+      setState(() {
+        _isPlacing = false;
+      });
+    }
   }
 }

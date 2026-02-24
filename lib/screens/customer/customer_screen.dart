@@ -1,11 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:kitchen_order_mgmt_app/blocs/order/order_bloc.dart';
-import 'package:kitchen_order_mgmt_app/blocs/order/order_state.dart';
 import 'package:kitchen_order_mgmt_app/core/data/menu_data.dart';
-import 'package:kitchen_order_mgmt_app/enums/order_status.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
+import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/menu_item_tile.dart';
 
 class CustomerScreen extends StatefulWidget {
@@ -18,6 +16,7 @@ class CustomerScreen extends StatefulWidget {
 
 class _CustomerScreenState extends State<CustomerScreen> {
   Map<String, int> quantities = {};
+  String? _lastStatus;
   // bool showReadyBar = false;
   int getQuantity(String id) {
     return quantities[id] ?? 0;
@@ -49,52 +48,80 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OrderBloc, OrderState>(
-      builder: (context, state) {
-        OrderStatus? tableStatus;
+    return Scaffold(
+      appBar: AppBar(title: const Text("Menu")),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text("Table No.: ${widget.tableNo}"),
+            Expanded(
+              child: ListView.builder(
+                itemCount: menuItems.length,
+                itemBuilder: (context, index) {
+                  final item = menuItems[index];
 
-        final tableOrders = state.orders
-            .where((order) => order.tableNumber == widget.tableNo)
-            .toList();
-
-        if (tableOrders.isNotEmpty) {
-          // Get latest order of this table
-          tableOrders.sort((a, b) => b.time.compareTo(a.time));
-          tableStatus = tableOrders.first.status;
-        }
-        return Scaffold(
-          appBar: AppBar(title: Text("Menu")),
-          body: Padding(
-            padding: EdgeInsets.all(12),
-            child: Column(
-              children: [
-                Text("Table No.: ${widget.tableNo}"),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: menuItems.length,
-                    itemBuilder: (context, index) {
-                      final item = menuItems[index];
-
-                      return MenuItemTile(
-                        item: item,
-                        quantity: getQuantity(item.id),
-                        onIncrease: () => increase(item.id),
-                        onDecrease: () => decrease(item.id),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                  return MenuItemTile(
+                    item: item,
+                    quantity: getQuantity(item.id),
+                    onIncrease: () => increase(item.id),
+                    onDecrease: () => decrease(item.id),
+                  );
+                },
+              ),
             ),
-          ),
-          bottomNavigationBar: tableStatus == OrderStatus.ready
-              ? readyBar()
-              : tableStatus == OrderStatus.preparing
-              ? preparingBar()
-              : quantities.isNotEmpty
-              ? viewOrderBar()
-              : null,
-        );
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildStatusBar(),
+    );
+  }
+
+  Widget _buildStatusBar() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirestoreService().getOrdersForTable(widget.tableNo),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final docs = snapshot.data!.docs;
+
+          // Find latest by time manually
+          QueryDocumentSnapshot latestDoc = docs.first;
+          Timestamp? latestTs = latestDoc['time'] as Timestamp?;
+
+          for (var doc in docs) {
+            final ts = doc['time'] as Timestamp?;
+
+            // Skip docs without time
+            if (ts == null) continue;
+
+            if (latestTs == null || ts.toDate().isAfter(latestTs.toDate())) {
+              latestDoc = doc;
+              latestTs = ts;
+            }
+          }
+
+          final data = latestDoc.data() as Map<String, dynamic>;
+          _lastStatus = data['status'];
+
+          print("Latest doc used: ${latestDoc.id} → $_lastStatus");
+        }
+
+        // Use cached status if snapshot temporarily empty
+        final tableStatus = _lastStatus;
+
+        if (tableStatus == 'ready') {
+          return readyBar();
+        }
+
+        if (tableStatus == 'preparing') {
+          return preparingBar();
+        }
+
+        if (quantities.isNotEmpty) {
+          return viewOrderBar();
+        }
+
+        return const SizedBox.shrink();
       },
     );
   }
