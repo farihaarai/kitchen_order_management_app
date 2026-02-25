@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/core/data/menu_data.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
+import 'package:kitchen_order_mgmt_app/screens/customer/receipt_screen.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/menu_item_tile.dart';
 
@@ -17,6 +18,8 @@ class CustomerScreen extends StatefulWidget {
 class _CustomerScreenState extends State<CustomerScreen> {
   Map<String, int> quantities = {};
   String? _lastStatus;
+  List<CartItem> _lastOrderItems = [];
+  DateTime? _lastOrderTime;
   // bool showReadyBar = false;
   int getQuantity(String id) {
     return quantities[id] ?? 0;
@@ -103,6 +106,18 @@ class _CustomerScreenState extends State<CustomerScreen> {
           final data = latestDoc.data() as Map<String, dynamic>;
           _lastStatus = data['status'];
 
+          final Timestamp? ts = data['time'] as Timestamp?;
+          _lastOrderTime = ts?.toDate();
+
+          final items = (data['items'] as List?) ?? [];
+
+          _lastOrderItems = items.map((item) {
+            return CartItem(
+              item: menuItems.firstWhere((m) => m.id == item['id']),
+              quantity: (item['quantity'] as num).toInt(),
+            );
+          }).toList();
+
           print("Latest doc used: ${latestDoc.id} → $_lastStatus");
         }
 
@@ -128,34 +143,73 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   Widget preparingBar() {
     return Container(
-      height: 60,
+      height: 70,
       color: Colors.orange,
-      child: Center(
-        child: Text(
-          "Your order is being prepared",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            "Your order is being prepared",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
-        ),
+          const Spacer(),
+          if (_lastOrderItems.isNotEmpty)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderSummaryScreen(
+                      cartItems: _lastOrderItems,
+                      tableNo: widget.tableNo,
+                    ),
+                  ),
+                );
+              },
+              child: Text("View Order"),
+            ),
+        ],
       ),
     );
   }
 
   Widget readyBar() {
     return Container(
-      height: 60,
+      height: 70,
       color: Colors.green,
-      child: Center(
-        child: Text(
-          "Order is ready",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Text(
+            "Order is ready",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
           ),
-        ),
+          const Spacer(),
+          if (_lastOrderItems.isNotEmpty)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReceiptScreen(
+                      items: _lastOrderItems,
+                      tableNo: widget.tableNo,
+                      time: _lastOrderTime!,
+                    ),
+                  ),
+                );
+              },
+              child: Text("View Bill"),
+            ),
+        ],
       ),
     );
   }
@@ -188,6 +242,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
               );
               if (result == true) {
                 setState(() {
+                  _lastOrderItems = cartItems;
                   quantities.clear();
                   // showReadyBar = true;
                 });
