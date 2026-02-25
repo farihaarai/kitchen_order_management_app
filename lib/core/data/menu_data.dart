@@ -1,4 +1,5 @@
 import 'package:kitchen_order_mgmt_app/enums/food_type.dart';
+import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
 import 'package:kitchen_order_mgmt_app/models/menu_item.dart';
 
 List<MenuItem> menuItems = [
@@ -8,6 +9,7 @@ List<MenuItem> menuItems = [
     price: 120,
     type: FoodType.veg,
     image: 'assets/veg_burger.jpg',
+    category: MenuCategory.snacks,
   ),
   MenuItem(
     id: '2',
@@ -15,6 +17,7 @@ List<MenuItem> menuItems = [
     price: 160,
     type: FoodType.nonVeg,
     image: 'assets/chicken_burger.jpg',
+    category: MenuCategory.snacks,
   ),
   MenuItem(
     id: '3',
@@ -22,6 +25,7 @@ List<MenuItem> menuItems = [
     price: 250,
     type: FoodType.veg,
     image: 'assets/veg_pizza.jpg',
+    category: MenuCategory.pizza,
   ),
   MenuItem(
     id: '4',
@@ -29,6 +33,7 @@ List<MenuItem> menuItems = [
     price: 340,
     type: FoodType.nonVeg,
     image: 'assets/chicken_pizza.jpg',
+    category: MenuCategory.pizza,
   ),
   MenuItem(
     id: '5',
@@ -36,6 +41,7 @@ List<MenuItem> menuItems = [
     price: 180,
     type: FoodType.veg,
     image: 'assets/pasta.jpg',
+    category: MenuCategory.mainCourse,
   ),
   MenuItem(
     id: '6',
@@ -43,6 +49,7 @@ List<MenuItem> menuItems = [
     price: 220,
     type: FoodType.nonVeg,
     image: 'assets/grilled_chicken.jpg',
+    category: MenuCategory.mainCourse,
   ),
   MenuItem(
     id: '7',
@@ -50,6 +57,7 @@ List<MenuItem> menuItems = [
     price: 90,
     type: FoodType.veg,
     image: 'assets/fries.jpg',
+    category: MenuCategory.snacks,
   ),
   MenuItem(
     id: '8',
@@ -57,6 +65,7 @@ List<MenuItem> menuItems = [
     price: 130,
     type: FoodType.veg,
     image: 'assets/cold_coffee.jpg',
+    category: MenuCategory.beverages,
   ),
   MenuItem(
     id: '9',
@@ -64,6 +73,7 @@ List<MenuItem> menuItems = [
     price: 210,
     type: FoodType.veg,
     image: 'assets/garlic_bread.jpg',
+    category: MenuCategory.snacks,
   ),
   MenuItem(
     id: '10',
@@ -71,5 +81,6 @@ List<MenuItem> menuItems = [
     price: 140,
     type: FoodType.veg,
     image: 'assets/strawberry_shake.jpg',
+    category: MenuCategory.beverages,
   ),
 ];

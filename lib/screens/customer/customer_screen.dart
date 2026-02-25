@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/core/data/menu_data.dart';
+import 'package:kitchen_order_mgmt_app/enums/food_type.dart';
+import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/receipt_screen.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/widgets/customer/category_selector.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/menu_item_tile.dart';
+import 'package:kitchen_order_mgmt_app/widgets/customer/veg_filter.dart';
 
 class CustomerScreen extends StatefulWidget {
   final int tableNo;
@@ -20,7 +24,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
   String? _lastStatus;
   List<CartItem> _lastOrderItems = [];
   DateTime? _lastOrderTime;
-  // bool showReadyBar = false;
+  MenuCategory _selectedCategory = MenuCategory.snacks;
+  FoodType? _selectedFoodType;
+
   int getQuantity(String id) {
     return quantities[id] ?? 0;
   }
@@ -51,6 +57,14 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredItems = menuItems.where((item) {
+      final categoryMatch = item.category == _selectedCategory;
+      final typeMatch = _selectedFoodType == null
+          ? true
+          : item.type == _selectedFoodType;
+
+      return categoryMatch && typeMatch;
+    }).toList();
     return Scaffold(
       appBar: AppBar(title: const Text("Menu")),
       body: Padding(
@@ -58,11 +72,33 @@ class _CustomerScreenState extends State<CustomerScreen> {
         child: Column(
           children: [
             Text("Table No.: ${widget.tableNo}"),
+
+            CategorySelector(
+              selectedCategory: _selectedCategory,
+              onCategorySelected: (category) {
+                setState(() {
+                  _selectedCategory = category;
+                  // _selectedFoodType = null; // reset filter when category change
+                });
+              },
+            ),
+
+            Divider(),
+
+            VegFilter(
+              selectedType: _selectedFoodType,
+              onchanged: (type) {
+                setState(() {
+                  _selectedFoodType = type;
+                });
+              },
+            ),
+
             Expanded(
               child: ListView.builder(
-                itemCount: menuItems.length,
+                itemCount: filteredItems.length,
                 itemBuilder: (context, index) {
-                  final item = menuItems[index];
+                  final item = filteredItems[index];
 
                   return MenuItemTile(
                     item: item,
@@ -76,6 +112,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
           ],
         ),
       ),
+
       bottomNavigationBar: _buildStatusBar(),
     );
   }
@@ -146,6 +183,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
       height: 70,
       color: Colors.orange,
       padding: const EdgeInsets.symmetric(horizontal: 16),
+
       child: Row(
         children: [
           Text(
@@ -156,7 +194,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
               fontSize: 18,
             ),
           ),
+
           const Spacer(),
+
           if (_lastOrderItems.isNotEmpty)
             ElevatedButton(
               onPressed: () {
@@ -192,7 +232,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
               fontSize: 20,
             ),
           ),
+
           const Spacer(),
+
           if (_lastOrderItems.isNotEmpty)
             ElevatedButton(
               onPressed: () {
@@ -228,6 +270,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
               : Text("$totalItems items added"),
 
           Spacer(),
+
           ElevatedButton(
             onPressed: () async {
               final cartItems = buildCartItems();
@@ -240,6 +283,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   ),
                 ),
               );
+
               if (result == true) {
                 setState(() {
                   _lastOrderItems = cartItems;
@@ -248,10 +292,12 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 });
               }
             },
+
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
+
             child: Text("View Order"),
           ),
         ],
