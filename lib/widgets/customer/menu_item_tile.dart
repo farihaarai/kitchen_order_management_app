@@ -19,7 +19,8 @@ class MenuItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 2,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
         padding: EdgeInsets.all(10),
         child: Column(
@@ -28,56 +29,81 @@ class MenuItemTile extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Image.asset(
-                  item.image,
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.cover,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    item.image,
+                    width: 90,
+                    height: 90,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 12),
 
-                // Icon(
-                //   Icons.circle,
-                //   color: item.type == FoodType.veg ? Colors.green : Colors.red,
-                // ),
-                // SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          Text(
-                            item.name,
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          Spacer(),
-                          Text("₹ ${item.price.toStringAsFixed(0)}"),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            onPressed: quantity == 0 ? null : onDecrease,
-
-                            icon: Icon(Icons.remove),
-                          ),
-                          SizedBox(width: 4),
                           Text(
-                            quantity.toString(),
-                            style: TextStyle(
-                              fontSize: 18,
+                            "₹${item.price.toStringAsFixed(0)}",
+                            style: const TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          IconButton(
-                            onPressed: onIncrease,
-                            icon: Icon(Icons.add),
-                          ),
                         ],
+                      ),
+                      SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove, size: 18),
+                                onPressed: quantity == 0 ? null : onDecrease,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                child: Text(
+                                  quantity.toString(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add, size: 18),
+                                onPressed: onIncrease,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),

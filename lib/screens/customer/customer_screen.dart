@@ -55,6 +55,18 @@ class _CustomerScreenState extends State<CustomerScreen> {
     setState(() {});
   }
 
+  double getTotalPrice() {
+    double total = 0;
+
+    for (var item in menuItems) {
+      final qty = quantities[item.id] ?? 0;
+      if (qty > 0) {
+        total += item.price * qty;
+      }
+    }
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredItems = menuItems.where((item) {
@@ -66,13 +78,37 @@ class _CustomerScreenState extends State<CustomerScreen> {
       return categoryMatch && typeMatch;
     }).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text("Menu")),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2E7D32), // deep food green
+        foregroundColor: Colors.white,
+        elevation: 3,
+        centerTitle: false,
+        titleSpacing: 12,
+        title: Row(
+          children: [
+            const Icon(Icons.restaurant_rounded, size: 26),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Dine In",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "Table ${widget.tableNo}",
+                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            Text("Table No.: ${widget.tableNo}"),
-
             CategorySelector(
               selectedCategory: _selectedCategory,
               onCategorySelected: (category) {
@@ -258,49 +294,85 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   Widget viewOrderBar() {
     final totalItems = getTotalItems();
+    final totalPrice = getTotalPrice();
 
-    return Container(
-      height: 60,
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      color: Colors.grey[300],
-      child: Row(
-        children: [
-          totalItems == 1
-              ? Text("1 item added")
-              : Text("$totalItems items added"),
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color.fromARGB(255, 87, 165, 91),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
 
-          Spacer(),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "$totalItems item${totalItems > 1 ? 's' : ''}",
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
 
-          ElevatedButton(
-            onPressed: () async {
-              final cartItems = buildCartItems();
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => OrderSummaryScreen(
-                    tableNo: widget.tableNo,
-                    cartItems: cartItems,
+                  Text(
+                    "₹ ${totalPrice.toStringAsFixed(0)}",
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ],
+              ),
+              const Spacer(),
+
+              ElevatedButton(
+                onPressed: () async {
+                  final cartItems = buildCartItems();
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OrderSummaryScreen(
+                        tableNo: widget.tableNo,
+                        cartItems: cartItems,
+                      ),
+                    ),
+                  );
+
+                  if (result == true) {
+                    setState(() {
+                      _lastOrderItems = cartItems;
+                      quantities.clear();
+                      // showReadyBar = true;
+                    });
+                  }
+                },
+
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF2E7D32),
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-              );
 
-              if (result == true) {
-                setState(() {
-                  _lastOrderItems = cartItems;
-                  quantities.clear();
-                  // showReadyBar = true;
-                });
-              }
-            },
-
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-
-            child: Text("View Order"),
+                child: Text(
+                  "View Order",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

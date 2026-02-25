@@ -28,7 +28,7 @@ class VegFilter extends StatelessWidget {
             label: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.circle, size: 10, color: Colors.green),
+                Icon(Icons.circle, size: 15, color: Colors.green),
                 SizedBox(width: 4),
                 Text("Veg"),
               ],
@@ -46,7 +46,7 @@ class VegFilter extends StatelessWidget {
             label: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.circle, size: 10, color: Colors.red),
+                Icon(Icons.circle, size: 15, color: Colors.red),
                 SizedBox(width: 4),
                 Text("Non-Veg"),
               ],
