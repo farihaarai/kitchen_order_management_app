@@ -21,7 +21,9 @@ class OrderCard extends StatelessWidget {
         : null;
     final DateTime? time = ts?.toDate();
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -29,48 +31,105 @@ class OrderCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text("Table $tableNumber"),
+                Text(
+                  "Table $tableNumber",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
                 Text(
                   time != null
-                      ? "Time: ${time.hour}:${time.minute.toString().padLeft(2, '0')}"
-                      : "Time: --:--",
+                      ? "${time.hour}:${time.minute.toString().padLeft(2, '0')}"
+                      : "--:--",
+                  style: TextStyle(color: Colors.grey),
                 ),
               ],
             ),
             const SizedBox(height: 10),
 
-            // Items
-            ...items.map((item) {
-              final qty = (item['quantity'] as num?)?.toInt() ?? 0;
-              return Text("• ${item['name']} x$qty");
-            }),
+            // Items in order
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items.map((item) {
+                final qty = (item['quantity'] as num?)?.toInt() ?? 0;
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    "${item['name']} x$qty",
+                    style: TextStyle(fontSize: 15),
+                  ),
+                );
+              }).toList(),
+            ),
 
             const SizedBox(height: 10),
 
-            Row(
-              children: [
-                Text("Status: ${status.toString().toUpperCase()}"),
-                const Spacer(),
-
-                if (!isCompleted && status == 'pending')
-                  ElevatedButton(
-                    onPressed: () {
-                      FirestoreService().updateOrderStatus(docId, 'preparing');
-                      print("Updating doc: $docId");
-                    },
-                    child: const Text("Start Preparing"),
-                  )
-                else if (!isCompleted && status == "preparing")
-                  ElevatedButton(
-                    onPressed: () {
-                      FirestoreService().updateOrderStatus(docId, 'ready');
-                      print("Updating doc: $docId");
-                    },
-                    child: const Text("Mark Ready"),
-                  ),
-              ],
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              decoration: BoxDecoration(
+                color: status == 'pending'
+                    ? Colors.red.shade100
+                    : status == 'preparing'
+                    ? Colors.orange.shade100
+                    : Colors.green.shade100,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                status.toString().toUpperCase(),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: status == 'pending'
+                      ? Colors.red
+                      : status == 'preparing'
+                      ? Colors.orange
+                      : Colors.green,
+                ),
+              ),
             ),
+
+            SizedBox(height: 10),
+
+            if (!isCompleted && status == 'pending')
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    FirestoreService().updateOrderStatus(docId, 'preparing');
+                    print("Updating doc: $docId");
+                  },
+                  child: const Text(
+                    "START PREPARING",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              )
+            else if (!isCompleted && status == "preparing")
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    FirestoreService().updateOrderStatus(docId, 'ready');
+                    print("Updating doc: $docId");
+                  },
+                  child: const Text(
+                    "MARK READY",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

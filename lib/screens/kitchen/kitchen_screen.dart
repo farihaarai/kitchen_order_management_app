@@ -11,11 +11,26 @@ class KitchenScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text("Orders"),
+          backgroundColor: const Color(0xFF2E7D32),
+          foregroundColor: Colors.white,
+          elevation: 2,
+          title: const Text(
+            "Kitchen Orders",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           bottom: const TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white30,
+            indicatorWeight: 4,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
+            ),
             tabs: [
-              Tab(text: "Active Orders"),
-              Tab(text: "Completed Orders"),
+              Tab(icon: Icon(Icons.kitchen), text: "Active"),
+              Tab(icon: Icon(Icons.check_circle), text: "Completed"),
             ],
           ),
         ),
