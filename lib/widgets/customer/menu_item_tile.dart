@@ -78,7 +78,7 @@ class MenuItemTile extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove, size: 18),
+                                icon: const Icon(Icons.remove, size: 14),
                                 onPressed: quantity == 0 ? null : onDecrease,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
@@ -91,12 +91,12 @@ class MenuItemTile extends StatelessWidget {
                                   quantity.toString(),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add, size: 18),
+                                icon: const Icon(Icons.add, size: 14),
                                 onPressed: onIncrease,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),

@@ -205,12 +205,84 @@ class _CustomerScreenState extends State<CustomerScreen> {
           return preparingBar();
         }
 
+        if (tableStatus == 'pending') {
+          return pendingBar();
+        }
+
         if (quantities.isNotEmpty) {
           return viewOrderBar();
         }
 
         return const SizedBox.shrink();
       },
+    );
+  }
+
+  Widget pendingBar() {
+    return Padding(
+      padding: EdgeInsets.all(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade600,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              const Icon(Icons.receipt_long, color: Colors.white, size: 26),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Order Placed",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+
+              if (_lastOrderItems.isNotEmpty)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReceiptScreen(
+                          items: _lastOrderItems,
+                          tableNo: widget.tableNo,
+                          time: _lastOrderTime!,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.grey.shade700,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    "View Bill",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -254,9 +326,10 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => OrderSummaryScreen(
-                          cartItems: _lastOrderItems,
+                        builder: (_) => ReceiptScreen(
+                          items: _lastOrderItems,
                           tableNo: widget.tableNo,
+                          time: _lastOrderTime!,
                         ),
                       ),
                     );
@@ -270,7 +343,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     ),
                   ),
                   child: Text(
-                    "View",
+                    "View Bill",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
