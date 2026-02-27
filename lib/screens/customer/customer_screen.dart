@@ -109,6 +109,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
+            SizedBox(height: 8),
             CategorySelector(
               selectedCategory: _selectedCategory,
               onCategorySelected: (category) {

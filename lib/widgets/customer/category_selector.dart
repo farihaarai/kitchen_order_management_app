@@ -15,7 +15,7 @@ class CategorySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 110,
+      height: 130,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: categoryItems.length,
@@ -28,16 +28,19 @@ class CategorySelector extends StatelessWidget {
               onCategorySelected(category.category);
             },
             child: Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
+              padding: EdgeInsetsGeometry.symmetric(horizontal: 10),
               child: Column(
                 children: [
                   Container(
-                    width: 70,
-                    height: 70,
+                    width: 84,
+                    height: 84,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: isSelected
-                          ? Border.all(color: Colors.green, width: 3)
+                          ? Border.all(
+                              color: const Color.fromARGB(255, 15, 190, 24),
+                              width: 4,
+                            )
                           : null,
                       image: DecorationImage(
                         image: AssetImage(category.image),
@@ -49,6 +52,7 @@ class CategorySelector extends StatelessWidget {
                   Text(
                     category.title,
                     style: TextStyle(
+                      fontSize: 14,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
