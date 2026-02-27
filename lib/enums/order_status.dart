@@ -1,1 +1,1 @@
-enum OrderStatus { pending, preparing, ready }
+enum OrderStatus { pending, preparing, ready, paid }

@@ -70,7 +70,9 @@ class OrderCard extends StatelessWidget {
                     ? Colors.red.shade100
                     : status == 'preparing'
                     ? Colors.orange.shade100
-                    : Colors.green.shade100,
+                    : status == 'ready'
+                    ? Colors.green.shade100
+                    : Colors.blue.shade100,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -81,13 +83,16 @@ class OrderCard extends StatelessWidget {
                       ? Colors.red
                       : status == 'preparing'
                       ? Colors.orange
-                      : Colors.green,
+                      : status == "ready"
+                      ? Colors.green
+                      : Colors.blue,
                 ),
               ),
             ),
 
             SizedBox(height: 10),
 
+            // ACTIVE TAB BUTTONS
             if (!isCompleted && status == 'pending')
               SizedBox(
                 width: double.infinity,
@@ -98,7 +103,6 @@ class OrderCard extends StatelessWidget {
                   ),
                   onPressed: () {
                     FirestoreService().updateOrderStatus(docId, 'preparing');
-                    print("Updating doc: $docId");
                   },
                   child: const Text(
                     "START PREPARING",
@@ -109,7 +113,7 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
               )
-            else if (!isCompleted && status == "preparing")
+            else if (!isCompleted && status == 'preparing')
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -119,10 +123,30 @@ class OrderCard extends StatelessWidget {
                   ),
                   onPressed: () {
                     FirestoreService().updateOrderStatus(docId, 'ready');
-                    print("Updating doc: $docId");
                   },
                   child: const Text(
                     "MARK READY",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              )
+            // COMPLETED TAB BUTTON
+            else if (isCompleted && status == 'ready')
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    FirestoreService().updateOrderStatus(docId, 'paid');
+                  },
+                  child: const Text(
+                    "MARK PAID",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

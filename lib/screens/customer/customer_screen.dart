@@ -210,6 +210,10 @@ class _CustomerScreenState extends State<CustomerScreen> {
           return pendingBar();
         }
 
+        if (tableStatus == 'paid') {
+          return SizedBox.shrink();
+        }
+
         if (quantities.isNotEmpty) {
           return viewOrderBar();
         }

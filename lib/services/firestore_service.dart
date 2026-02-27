@@ -59,4 +59,12 @@ class FirestoreService {
         .orderBy('time', descending: true)
         .snapshots();
   }
+
+  Stream<QuerySnapshot> getPaidOrdersStream() {
+    return _db
+        .collection('orders')
+        .where('status', isEqualTo: 'paid')
+        .orderBy('time', descending: true)
+        .snapshots();
+  }
 }
