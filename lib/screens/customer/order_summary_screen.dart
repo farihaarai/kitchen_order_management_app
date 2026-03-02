@@ -19,17 +19,17 @@ class OrderSummaryScreen extends StatefulWidget {
 }
 
 class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
+  // Calculate total price of current cart
   double getTotalAmount() {
     double total = 0;
-
     for (var cartItem in widget.cartItems) {
       total += cartItem.item.price * cartItem.quantity;
     }
     return total;
   }
 
-  bool _isPlacing = false;
-  String? _currentStatus;
+  bool _isPlacing = false; // Prevent multiple clicks
+  String? _currentStatus; // Latest order status for this table
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +51,13 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
           ],
         ),
       ),
+
+      // ---------------- Order Items ----------------
       body: Padding(
         padding: const EdgeInsets.all(15.0),
         child: Column(
           children: [
+            // List of selected items
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(8),
@@ -62,6 +65,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 itemBuilder: (context, index) {
                   final item = widget.cartItems[index];
                   final itemTotal = item.item.price * item.quantity;
+
                   return Card(
                     elevation: 1,
                     margin: const EdgeInsets.symmetric(vertical: 6),
@@ -69,7 +73,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 10,
                       ),
@@ -78,15 +82,16 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                           Expanded(
                             child: Text(
                               item.item.name,
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-
                           Text("x${item.quantity}"),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Text(
                             "₹ ${itemTotal.toStringAsFixed(0)}",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -95,9 +100,12 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 },
               ),
             ),
+
             const SizedBox(height: 10),
+
+            // Total section
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
@@ -105,13 +113,13 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     "Total",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     "₹ ${getTotalAmount().toStringAsFixed(0)}",
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF2E7D32),
@@ -121,16 +129,21 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
               ),
             ),
 
-            Spacer(),
+            const Spacer(),
           ],
         ),
       ),
+
+      // ---------------- Bottom Button ----------------
+      // Checks latest order status for this table.
+      // If kitchen is preparing, block new order.
       bottomNavigationBar: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService().getOrdersForTable(widget.tableNo),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             final docs = snapshot.data!.docs;
 
+            // Find latest order by time
             QueryDocumentSnapshot latestDoc = docs.first;
             Timestamp? latestTs = latestDoc['time'] as Timestamp?;
 
@@ -143,10 +156,12 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 latestTs = ts;
               }
             }
+
             final data = latestDoc.data() as Map<String, dynamic>;
             _currentStatus = data['status'];
           }
 
+          // If latest order is still preparing, do not allow new order
           if (_currentStatus == 'preparing') {
             return Padding(
               padding: const EdgeInsets.all(16),
@@ -167,6 +182,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
               ),
             );
           }
+
+          // Otherwise show Place Order button
           return Padding(
             padding: const EdgeInsets.all(16),
             child: SizedBox(
@@ -174,15 +191,15 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
               child: ElevatedButton(
                 onPressed: _isPlacing ? null : placeOrder,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF2E7D32),
+                  backgroundColor: const Color(0xFF2E7D32),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: _isPlacing
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text(
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
                         "Place Order",
                         style: TextStyle(
                           fontSize: 16,
@@ -197,6 +214,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     );
   }
 
+  // Handles session logic and saves order to Firestore
   void placeOrder() async {
     if (_isPlacing) return;
     if (widget.cartItems.isEmpty) return;
@@ -206,19 +224,59 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     });
 
     try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Get all orders for this table
+      final snapshot = await firestore
+          .collection('orders')
+          .where('tableNumber', isEqualTo: widget.tableNo)
+          .get();
+
+      // Active orders = status not paid (same session)
+      final activeOrders = snapshot.docs.where((doc) {
+        final status = doc['status'];
+        return status != 'paid';
+      }).toList();
+
+      String sessionId;
+      int orderNo;
+
+      if (activeOrders.isEmpty) {
+        // Start new session
+        sessionId =
+            "t${widget.tableNo}_${DateTime.now().millisecondsSinceEpoch}";
+        orderNo = 1;
+      } else {
+        // Continue existing session
+        sessionId = activeOrders.first['sessionId'];
+        orderNo = activeOrders.length + 1;
+
+        // Allow maximum 4 orders per session
+        if (orderNo > 4) {
+          setState(() {
+            _isPlacing = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Maximum 4 orders allowed")),
+          );
+          return;
+        }
+      }
+
       final order = Order(
         id: DateTime.now().toString(),
         tableNumber: widget.tableNo,
         items: widget.cartItems,
         time: DateTime.now(),
+        sessionId: sessionId,
+        orderNo: orderNo,
       );
 
       await FirestoreService().addOrder(order);
 
-      print("Order Placed Successfully");
       Navigator.pop(context, true);
     } catch (e) {
-      print("Error placing order: $e");
       setState(() {
         _isPlacing = false;
       });

@@ -4,6 +4,7 @@ import 'package:kitchen_order_mgmt_app/core/data/menu_data.dart';
 import 'package:kitchen_order_mgmt_app/enums/food_type.dart';
 import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
+import 'package:kitchen_order_mgmt_app/screens/customer/order_progress_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/receipt_screen.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
@@ -158,20 +159,46 @@ class _CustomerScreenState extends State<CustomerScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: FirestoreService().getOrdersForTable(widget.tableNo),
       builder: (context, snapshot) {
+        // PRIORITY 1: If user is creating a new order
+        if (quantities.isNotEmpty) {
+          print("Cart active → Showing View Order bar");
+          return viewOrderBar();
+        }
         if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
           final docs = snapshot.data!.docs;
 
-          // Find latest by time manually
-          QueryDocumentSnapshot latestDoc = docs.first;
+          // -------- STEP 1: Filter ACTIVE orders (status != paid) --------
+          final activeDocs = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['status'] != 'paid';
+          }).toList();
+
+          print("Active orders count: ${activeDocs.length}");
+
+          // -------- STEP 2: No active orders --------
+          if (activeDocs.isEmpty) {
+            _lastStatus = null;
+
+            if (quantities.isNotEmpty) {
+              return viewOrderBar();
+            }
+            return const SizedBox.shrink();
+          }
+
+          // -------- STEP 3: Multiple active orders --------
+          if (activeDocs.length > 1) {
+            return multiOrderBar();
+          }
+
+          // -------- STEP 4: Only ONE active order --------
+          QueryDocumentSnapshot latestDoc = activeDocs.first;
           Timestamp? latestTs = latestDoc['time'] as Timestamp?;
 
-          for (var doc in docs) {
+          for (var doc in activeDocs) {
             final ts = doc['time'] as Timestamp?;
-
-            // Skip docs without time
-            if (ts == null) continue;
-
-            if (latestTs == null || ts.toDate().isAfter(latestTs.toDate())) {
+            if (ts != null &&
+                latestTs != null &&
+                ts.toDate().isAfter(latestTs.toDate())) {
               latestDoc = doc;
               latestTs = ts;
             }
@@ -192,34 +219,75 @@ class _CustomerScreenState extends State<CustomerScreen> {
             );
           }).toList();
 
-          print("Latest doc used: ${latestDoc.id} → $_lastStatus");
+          print("Latest active order: ${latestDoc.id} → $_lastStatus");
+
+          // -------- STEP 5: Show status bar --------
+          if (_lastStatus == 'ready') return readyBar();
+          if (_lastStatus == 'preparing') return preparingBar();
+          if (_lastStatus == 'pending') return pendingBar();
         }
 
-        // Use cached status if snapshot temporarily empty
-        final tableStatus = _lastStatus;
-
-        if (tableStatus == 'ready') {
-          return readyBar();
-        }
-
-        if (tableStatus == 'preparing') {
-          return preparingBar();
-        }
-
-        if (tableStatus == 'pending') {
-          return pendingBar();
-        }
-
-        if (tableStatus == 'paid') {
-          return SizedBox.shrink();
-        }
-
-        if (quantities.isNotEmpty) {
-          return viewOrderBar();
-        }
+        // -------- STEP 6: No Firestore data --------
+        // if (quantities.isNotEmpty) {
+        //   return viewOrderBar();
+        // }
 
         return const SizedBox.shrink();
       },
+    );
+  }
+
+  Widget multiOrderBar() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue.shade600,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              const Icon(Icons.list_alt, color: Colors.white),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  "View your orders progress",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          OrderProgressScreen(tableNo: widget.tableNo),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue,
+                ),
+                child: const Text("View"),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

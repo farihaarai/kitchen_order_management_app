@@ -7,6 +7,8 @@ class Order {
   final List<CartItem> items;
   final DateTime time;
   OrderStatus status;
+  final String sessionId;
+  final int orderNo;
 
   Order({
     required this.id,
@@ -14,5 +16,7 @@ class Order {
     required this.items,
     required this.time,
     this.status = OrderStatus.pending,
+    required this.sessionId,
+    required this.orderNo,
   });
 }
