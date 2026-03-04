@@ -274,6 +274,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       );
 
       await FirestoreService().addOrder(order);
+      await FirestoreService().clearCart(widget.tableNo);
 
       Navigator.pop(context, true);
     } catch (e) {

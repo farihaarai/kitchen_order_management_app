@@ -21,52 +21,52 @@ class CustomerScreen extends StatefulWidget {
 }
 
 class _CustomerScreenState extends State<CustomerScreen> {
-  Map<String, int> quantities = {};
+  // Map<String, int> quantities = {};
   String? _lastStatus;
   List<CartItem> _lastOrderItems = [];
   DateTime? _lastOrderTime;
   MenuCategory _selectedCategory = MenuCategory.snacks;
   FoodType? _selectedFoodType;
 
-  int getQuantity(String id) {
-    return quantities[id] ?? 0;
-  }
+  // int getQuantity(String id) {
+  //   return quantities[id] ?? 0;
+  // }
 
-  int getTotalItems() {
-    int total = 0;
-    for (var qty in quantities.values) {
-      total += qty;
-    }
-    return total;
-  }
+  // int getTotalItems() {
+  //   int total = 0;
+  //   for (var qty in quantities.values) {
+  //     total += qty;
+  //   }
+  //   return total;
+  // }
 
-  void increase(String id) {
-    final currentQty = quantities[id] ?? 0;
-    quantities[id] = currentQty + 1;
-    setState(() {});
-  }
+  // void increase(String id) {
+  //   final currentQty = quantities[id] ?? 0;
+  //   quantities[id] = currentQty + 1;
+  //   setState(() {});
+  // }
 
-  void decrease(String id) {
-    final currentQty = quantities[id] ?? 0;
-    if (currentQty > 1) {
-      quantities[id] = currentQty - 1;
-    } else {
-      quantities.remove(id); // remove when 0
-    }
-    setState(() {});
-  }
+  // void decrease(String id) {
+  //   final currentQty = quantities[id] ?? 0;
+  //   if (currentQty > 1) {
+  //     quantities[id] = currentQty - 1;
+  //   } else {
+  //     quantities.remove(id); // remove when 0
+  //   }
+  //   setState(() {});
+  // }
 
-  double getTotalPrice() {
-    double total = 0;
+  // double getTotalPrice() {
+  //   double total = 0;
 
-    for (var item in menuItems) {
-      final qty = quantities[item.id] ?? 0;
-      if (qty > 0) {
-        total += item.price * qty;
-      }
-    }
-    return total;
-  }
+  //   for (var item in menuItems) {
+  //     final qty = quantities[item.id] ?? 0;
+  //     if (qty > 0) {
+  //       total += item.price * qty;
+  //     }
+  //   }
+  //   return total;
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -132,20 +132,53 @@ class _CustomerScreenState extends State<CustomerScreen> {
               },
             ),
 
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredItems.length,
-                itemBuilder: (context, index) {
-                  final item = filteredItems[index];
+            StreamBuilder<QuerySnapshot>(
+              stream: FirestoreService().getCartStream(widget.tableNo),
+              builder: (context, snapshot) {
+                // convert firestore cart to map
+                Map<String, int> quantities = {};
 
-                  return MenuItemTile(
-                    item: item,
-                    quantity: getQuantity(item.id),
-                    onIncrease: () => increase(item.id),
-                    onDecrease: () => decrease(item.id),
-                  );
-                },
-              ),
+                if (snapshot.hasData) {
+                  for (var doc in snapshot.data!.docs) {
+                    quantities[doc['id']] = (doc['quantity'] as num).toInt();
+                  }
+                }
+
+                final filteredItems = menuItems.where((item) {
+                  final categoryMatch = item.category == _selectedCategory;
+                  final typeMatch = _selectedFoodType == null
+                      ? true
+                      : item.type == _selectedFoodType;
+                  return categoryMatch && typeMatch;
+                }).toList();
+
+                return Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredItems[index];
+
+                      return MenuItemTile(
+                        item: item,
+                        quantity: quantities[item.id] ?? 0,
+                        onIncrease: () {
+                          FirestoreService().addToCart(widget.tableNo, {
+                            'id': item.id,
+                            'name': item.name,
+                            'price': item.price,
+                          });
+                        },
+                        onDecrease: () {
+                          FirestoreService().decreaseCartItem(
+                            widget.tableNo,
+                            item.id,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -157,82 +190,70 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   Widget _buildStatusBar() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirestoreService().getOrdersForTable(widget.tableNo),
-      builder: (context, snapshot) {
-        // PRIORITY 1: If user is creating a new order
-        if (quantities.isNotEmpty) {
-          print("Cart active → Showing View Order bar");
-          return viewOrderBar();
+      stream: FirestoreService().getCartStream(widget.tableNo),
+      builder: (context, cartSnapshot) {
+        int totalItems = 0;
+        double totalPrice = 0;
+
+        Map<String, int> quantities = {};
+
+        // ---------- CART DATA ----------
+        if (cartSnapshot.hasData) {
+          for (var doc in cartSnapshot.data!.docs) {
+            final qty = (doc['quantity'] as num).toInt();
+            final price = (doc['price'] as num).toDouble();
+
+            quantities[doc['id']] = qty;
+            totalItems += qty;
+            totalPrice += qty * price;
+          }
         }
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          final docs = snapshot.data!.docs;
 
-          // -------- STEP 1: Filter ACTIVE orders (status != paid) --------
-          final activeDocs = docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return data['status'] != 'paid';
-          }).toList();
+        // If cart has items → show View Order bar
+        if (totalItems > 0) {
+          return viewOrderBar(quantities, totalItems, totalPrice);
+        }
 
-          print("Active orders count: ${activeDocs.length}");
-
-          // -------- STEP 2: No active orders --------
-          if (activeDocs.isEmpty) {
-            _lastStatus = null;
-
-            if (quantities.isNotEmpty) {
-              return viewOrderBar();
+        // ---------- ORDER STATUS (your existing logic) ----------
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirestoreService().getOrdersForTable(widget.tableNo),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const SizedBox.shrink();
             }
+
+            final docs = snapshot.data!.docs;
+
+            final activeDocs = docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              return data['status'] != 'paid';
+            }).toList();
+
+            if (activeDocs.isEmpty) return const SizedBox.shrink();
+
+            if (activeDocs.length > 1) return multiOrderBar();
+
+            final data = activeDocs.first.data() as Map<String, dynamic>;
+
+            _lastStatus = data['status'];
+            final Timestamp? ts = data['time'] as Timestamp?;
+            _lastOrderTime = ts?.toDate();
+
+            final items = (data['items'] as List?) ?? [];
+            _lastOrderItems = items.map((item) {
+              return CartItem(
+                item: menuItems.firstWhere((m) => m.id == item['id']),
+                quantity: (item['quantity'] as num).toInt(),
+              );
+            }).toList();
+
+            if (_lastStatus == 'ready') return readyBar();
+            if (_lastStatus == 'preparing') return preparingBar();
+            if (_lastStatus == 'pending') return pendingBar();
+
             return const SizedBox.shrink();
-          }
-
-          // -------- STEP 3: Multiple active orders --------
-          if (activeDocs.length > 1) {
-            return multiOrderBar();
-          }
-
-          // -------- STEP 4: Only ONE active order --------
-          QueryDocumentSnapshot latestDoc = activeDocs.first;
-          Timestamp? latestTs = latestDoc['time'] as Timestamp?;
-
-          for (var doc in activeDocs) {
-            final ts = doc['time'] as Timestamp?;
-            if (ts != null &&
-                latestTs != null &&
-                ts.toDate().isAfter(latestTs.toDate())) {
-              latestDoc = doc;
-              latestTs = ts;
-            }
-          }
-
-          final data = latestDoc.data() as Map<String, dynamic>;
-          _lastStatus = data['status'];
-
-          final Timestamp? ts = data['time'] as Timestamp?;
-          _lastOrderTime = ts?.toDate();
-
-          final items = (data['items'] as List?) ?? [];
-
-          _lastOrderItems = items.map((item) {
-            return CartItem(
-              item: menuItems.firstWhere((m) => m.id == item['id']),
-              quantity: (item['quantity'] as num).toInt(),
-            );
-          }).toList();
-
-          print("Latest active order: ${latestDoc.id} → $_lastStatus");
-
-          // -------- STEP 5: Show status bar --------
-          if (_lastStatus == 'ready') return readyBar();
-          if (_lastStatus == 'preparing') return preparingBar();
-          if (_lastStatus == 'pending') return pendingBar();
-        }
-
-        // -------- STEP 6: No Firestore data --------
-        // if (quantities.isNotEmpty) {
-        //   return viewOrderBar();
-        // }
-
-        return const SizedBox.shrink();
+          },
+        );
       },
     );
   }
@@ -496,17 +517,18 @@ class _CustomerScreenState extends State<CustomerScreen> {
     );
   }
 
-  Widget viewOrderBar() {
-    final totalItems = getTotalItems();
-    final totalPrice = getTotalPrice();
-
+  Widget viewOrderBar(
+    Map<String, int> quantities,
+    int totalItems,
+    double totalPrice,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Container(
         decoration: BoxDecoration(
-          color: Color.fromARGB(255, 87, 165, 91),
+          color: const Color.fromARGB(255, 87, 165, 91),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black26,
               blurRadius: 8,
@@ -514,8 +536,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
             ),
           ],
         ),
-
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: SafeArea(
           top: false,
           child: Row(
@@ -526,20 +547,25 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 children: [
                   Text(
                     "$totalItems item${totalItems > 1 ? 's' : ''}",
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
-
                   Text(
                     "₹ ${totalPrice.toStringAsFixed(0)}",
-                    style: TextStyle(color: Colors.white, fontSize: 18),
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ],
               ),
               const Spacer(),
-
               ElevatedButton(
                 onPressed: () async {
-                  final cartItems = buildCartItems();
+                  // Build CartItems from Firestore data
+                  List<CartItem> cartItems = [];
+
+                  quantities.forEach((id, qty) {
+                    final menuItem = menuItems.firstWhere((m) => m.id == id);
+                    cartItems.add(CartItem(item: menuItem, quantity: qty));
+                  });
+
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -551,25 +577,14 @@ class _CustomerScreenState extends State<CustomerScreen> {
                   );
 
                   if (result == true) {
-                    setState(() {
-                      _lastOrderItems = cartItems;
-                      quantities.clear();
-                      // showReadyBar = true;
-                    });
+                    _lastOrderItems = cartItems;
                   }
                 },
-
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF2E7D32),
-                  elevation: 0,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                 ),
-
-                child: Text(
+                child: const Text(
                   "View Order",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -581,16 +596,16 @@ class _CustomerScreenState extends State<CustomerScreen> {
     );
   }
 
-  List<CartItem> buildCartItems() {
-    List<CartItem> cart = [];
+  // List<CartItem> buildCartItems() {
+  //   List<CartItem> cart = [];
 
-    for (var item in menuItems) {
-      final qty = quantities[item.id] ?? 0;
+  //   for (var item in menuItems) {
+  //     final qty = quantities[item.id] ?? 0;
 
-      if (qty > 0) {
-        cart.add(CartItem(item: item, quantity: qty));
-      }
-    }
-    return cart;
-  }
+  //     if (qty > 0) {
+  //       cart.add(CartItem(item: item, quantity: qty));
+  //     }
+  //   }
+  //   return cart;
+  // }
 }
