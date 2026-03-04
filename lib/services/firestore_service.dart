@@ -106,7 +106,7 @@ class FirestoreService {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             return data['status'] != 'paid';
           }).toList();
         });

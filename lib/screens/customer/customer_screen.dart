@@ -25,7 +25,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
   String? _lastStatus;
   List<CartItem> _lastOrderItems = [];
   DateTime? _lastOrderTime;
-  MenuCategory _selectedCategory = MenuCategory.snacks;
+  MenuCategory _selectedCategory = MenuCategory.starters;
   FoodType? _selectedFoodType;
 
   // int getQuantity(String id) {
@@ -70,14 +70,6 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredItems = menuItems.where((item) {
-      final categoryMatch = item.category == _selectedCategory;
-      final typeMatch = _selectedFoodType == null
-          ? true
-          : item.type == _selectedFoodType;
-
-      return categoryMatch && typeMatch;
-    }).toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF2E7D32), // deep food green

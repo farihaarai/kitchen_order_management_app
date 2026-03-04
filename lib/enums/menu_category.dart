@@ -1,1 +1,1 @@
-enum MenuCategory { snacks, pizza, mainCourse, beverages }
+enum MenuCategory { starters, curries, breads, biryani, beverages, deserts }

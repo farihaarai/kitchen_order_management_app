@@ -3,23 +3,33 @@ import 'package:kitchen_order_mgmt_app/models/category_item.dart';
 
 List<CategoryItem> categoryItems = [
   CategoryItem(
-    category: MenuCategory.snacks,
-    title: "Snacks",
-    image: "assets/snacks.jpg",
+    category: MenuCategory.starters,
+    title: "Starters",
+    image: "assets/starters/lollipop.jpg",
   ),
   CategoryItem(
-    category: MenuCategory.pizza,
-    title: "Pizza",
-    image: "assets/pizza.jpg",
+    category: MenuCategory.curries,
+    title: "Curries",
+    image: "assets/curries/butter_chicken.jpg",
   ),
   CategoryItem(
-    category: MenuCategory.mainCourse,
-    title: "Main Course",
-    image: "assets/main_course.jpg",
+    category: MenuCategory.breads,
+    title: "Breads",
+    image: "assets/breads/garlic_naan.jpg",
+  ),
+  CategoryItem(
+    category: MenuCategory.biryani,
+    title: "Biryani",
+    image: "assets/biryani/chicken_biryani.jpg",
   ),
   CategoryItem(
     category: MenuCategory.beverages,
     title: "Beverages",
-    image: "assets/beverages.jpg",
+    image: "assets/beverages/lemonade.jpg",
+  ),
+  CategoryItem(
+    category: MenuCategory.deserts,
+    title: "Deserts",
+    image: "assets/deserts/gulabjamun.jpg",
   ),
 ];
