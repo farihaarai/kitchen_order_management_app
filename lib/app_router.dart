@@ -1,19 +1,13 @@
 import 'package:go_router/go_router.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/customer_screen.dart';
-import 'package:kitchen_order_mgmt_app/screens/kitchen/kitchen_screen.dart';
+import 'package:kitchen_order_mgmt_app/screens/kitchen/kitchen_login_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   routes: <GoRoute>[
-    // GoRoute(
-    //   path: '/',
-    //   builder: (context, state) {
-    //     return const KitchenScreen();
-    //   },
-    // ),
     GoRoute(
       path: '/kitchen',
       builder: (context, state) {
-        return const KitchenScreen();
+        return const KitchenLoginScreen();
       },
     ),
 

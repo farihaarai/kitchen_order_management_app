@@ -145,25 +145,51 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 }).toList();
 
                 return Expanded(
-                  child: ListView.builder(
-                    itemCount: filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = filteredItems[index];
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      int columns = 1;
 
-                      return MenuItemTile(
-                        item: item,
-                        quantity: quantities[item.id] ?? 0,
-                        onIncrease: () {
-                          FirestoreService().addToCart(widget.tableNo, {
-                            'id': item.id,
-                            'name': item.name,
-                            'price': item.price,
-                          });
-                        },
-                        onDecrease: () {
-                          FirestoreService().decreaseCartItem(
-                            widget.tableNo,
-                            item.id,
+                      if (constraints.maxWidth > 1000) {
+                        columns = 3;
+                      } else if (constraints.maxWidth > 600) {
+                        columns = 2;
+                      }
+
+                      return GridView.builder(
+                        padding: EdgeInsets.fromLTRB(8, 8, 8, 120),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: columns == 1
+                              ? 0.95
+                              : columns == 2
+                              ? 0.85
+                              : 0.8,
+                        ),
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+
+                          return Padding(
+                            padding: const EdgeInsets.all(6.0),
+                            child: MenuItemTile(
+                              item: item,
+                              quantity: quantities[item.id] ?? 0,
+                              onIncrease: () {
+                                FirestoreService().addToCart(widget.tableNo, {
+                                  'id': item.id,
+                                  'name': item.name,
+                                  'price': item.price,
+                                });
+                              },
+                              onDecrease: () {
+                                FirestoreService().decreaseCartItem(
+                                  widget.tableNo,
+                                  item.id,
+                                );
+                              },
+                            ),
                           );
                         },
                       );

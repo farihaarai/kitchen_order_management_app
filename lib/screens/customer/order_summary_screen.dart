@@ -29,7 +29,6 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
   }
 
   bool _isPlacing = false; // Prevent multiple clicks
-  String? _currentStatus; // Latest order status for this table
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +56,23 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         padding: const EdgeInsets.all(15.0),
         child: Column(
           children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.shopping_cart, color: Color(0xFF2E7D32)),
+                  SizedBox(width: 8),
+                  Text(
+                    "${widget.cartItems.length} items in cart",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
             // List of selected items
             Expanded(
               child: ListView.builder(
@@ -67,31 +83,54 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                   final itemTotal = item.item.price * item.quantity;
 
                   return Card(
-                    elevation: 1,
+                    elevation: 2,
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
+                      padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
+                          /// ITEM NAME
                           Expanded(
                             child: Text(
                               item.item.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
+                                fontSize: 15,
                               ),
                             ),
                           ),
-                          Text("x${item.quantity}"),
+
+                          /// QUANTITY
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              "x${item.quantity}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
                           const SizedBox(width: 12),
+
+                          /// PRICE
                           Text(
-                            "₹ ${itemTotal.toStringAsFixed(0)}",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            "₹${itemTotal.toStringAsFixed(0)}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Color(0xFF2E7D32),
+                            ),
                           ),
                         ],
                       ),
@@ -105,22 +144,28 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
             // Total section
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    "Total",
+                    "Total Amount",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     "₹ ${getTotalAmount().toStringAsFixed(0)}",
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF2E7D32),
                     ),
@@ -128,88 +173,32 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 ],
               ),
             ),
-
-            const Spacer(),
           ],
         ),
       ),
 
       // ---------------- Bottom Button ----------------
-      // Checks latest order status for this table.
-      // If kitchen is preparing, block new order.
-      bottomNavigationBar: StreamBuilder<QuerySnapshot>(
-        stream: FirestoreService().getOrdersForTable(widget.tableNo),
-        builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-            final docs = snapshot.data!.docs;
-
-            // Find latest order by time
-            QueryDocumentSnapshot latestDoc = docs.first;
-            Timestamp? latestTs = latestDoc['time'] as Timestamp?;
-
-            for (var doc in docs) {
-              final ts = doc['time'] as Timestamp?;
-              if (ts != null &&
-                  latestTs != null &&
-                  ts.toDate().isAfter(latestTs.toDate())) {
-                latestDoc = doc;
-                latestTs = ts;
-              }
-            }
-
-            final data = latestDoc.data() as Map<String, dynamic>;
-            _currentStatus = data['status'];
-          }
-
-          // If latest order is still preparing, do not allow new order
-          if (_currentStatus == 'preparing') {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                height: 55,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  "Order already in progress",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black54,
-                  ),
-                ),
-              ),
-            );
-          }
-
-          // Otherwise show Place Order button
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isPlacing ? null : placeOrder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isPlacing
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Place Order",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          height: 55,
+          child: ElevatedButton(
+            onPressed: _isPlacing ? null : placeOrder,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          );
-        },
+            child: _isPlacing
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text(
+                    "Place Order",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+          ),
+        ),
       ),
     );
   }
