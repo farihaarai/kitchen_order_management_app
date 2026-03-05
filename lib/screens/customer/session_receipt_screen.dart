@@ -67,7 +67,7 @@ class SessionReceiptScreen extends StatelessWidget {
                       children: [
                         // Restaurant title
                         const Text(
-                          "DINE IN",
+                          "ROYAL SPICE",
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,

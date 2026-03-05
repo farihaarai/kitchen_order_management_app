@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import 'package:kitchen_order_mgmt_app/screens/customer/customer_screen.dart';
+import 'package:kitchen_order_mgmt_app/screens/customer/welcome_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/kitchen_login_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -25,7 +25,7 @@ final GoRouter appRouter = GoRouter(
         //   return const StartScreen();
         // }
 
-        return CustomerScreen(tableNo: tableNo!);
+        return WelcomeScreen(tableNo: tableNo!);
       },
     ),
   ],

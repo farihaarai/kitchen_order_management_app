@@ -56,7 +56,7 @@ class ReceiptScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          "DINE IN",
+          "ROYAL SPICE",
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 4),

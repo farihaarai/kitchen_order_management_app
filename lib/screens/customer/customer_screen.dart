@@ -79,19 +79,19 @@ class _CustomerScreenState extends State<CustomerScreen> {
         titleSpacing: 12,
         title: Row(
           children: [
-            const Icon(Icons.restaurant_rounded, size: 26),
+            const Icon(Icons.food_bank_outlined, size: 40),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Dine In",
+                  "ROYAL SPICE",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   "Table ${widget.tableNo}",
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  style: const TextStyle(fontSize: 16, color: Colors.white70),
                 ),
               ],
             ),

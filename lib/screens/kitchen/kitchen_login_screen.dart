@@ -30,55 +30,97 @@ class _KitchenLoginScreenState extends State<KitchenLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Kitchen Access"),
-        backgroundColor: Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-      ),
       body: Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              /// Restaurant Branding
               const Icon(
-                Icons.lock_person_rounded,
-                size: 70,
+                Icons.food_bank_outlined,
+                size: 60,
                 color: Color(0xFF2E7D32),
               ),
 
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-              Text(
-                "Enter Kitchen PIN",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const Text(
+                "ROYAL SPICE",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
               ),
 
-              SizedBox(height: 10),
+              const Text(
+                "Kitchen Dashboard",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
 
-              TextField(
-                controller: pinController,
-                keyboardType: TextInputType.number,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: "Enter access PIN",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 30),
+
+              /// Login Card
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Card(
+                  elevation: 6,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-              ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.lock_person_rounded,
+                          size: 45,
+                          color: Color(0xFF2E7D32),
+                        ),
 
-              const SizedBox(height: 20),
+                        const SizedBox(height: 12),
 
-              ElevatedButton(
-                onPressed: checkPin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  "ENTER",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                        const Text(
+                          "Kitchen Access",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        TextField(
+                          controller: pinController,
+                          keyboardType: TextInputType.number,
+                          obscureText: true,
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            hintText: "••••",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: checkPin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2E7D32),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text("ENTER"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

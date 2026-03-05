@@ -26,9 +26,18 @@ class KitchenScreen extends StatelessWidget {
           elevation: 2,
 
           // Screen title
-          title: const Text(
-            "Kitchen Orders",
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                Icon(Icons.food_bank_outlined, size: 30),
+                SizedBox(width: 8),
+                Text(
+                  "Kitchen Orders",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                ),
+              ],
+            ),
           ),
 
           // Tab bar inside AppBar
@@ -62,7 +71,7 @@ class KitchenScreen extends StatelessWidget {
                   final count = snapshot.data ?? 0;
 
                   return Tab(
-                    icon: const Icon(Icons.kitchen),
+                    // icon: const Icon(Icons.kitchen),
                     text: "Active ($count)",
                   );
                 },
@@ -79,7 +88,7 @@ class KitchenScreen extends StatelessWidget {
                   final count = snapshot.data ?? 0;
 
                   return Tab(
-                    icon: const Icon(Icons.check_circle),
+                    // icon: const Icon(Icons.check_circle),
                     text: "Completed ($count)",
                   );
                 },
@@ -96,7 +105,7 @@ class KitchenScreen extends StatelessWidget {
                   final count = snapshot.data ?? 0;
 
                   return Tab(
-                    icon: const Icon(Icons.attach_money_rounded),
+                    // icon: const Icon(Icons.attach_money_rounded),
                     text: "Paid ($count)",
                   );
                 },
