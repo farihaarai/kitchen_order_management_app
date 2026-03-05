@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/order_card.dart';
 
@@ -54,10 +55,29 @@ class _ActiveOrdersTabState extends State<ActiveOrdersTab> {
         }
 
         // Show orders in a list
-        return ListView.builder(
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            return OrderCard(doc: orders[index]);
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            int columns = 1;
+
+            if (constraints.maxWidth > 1200) {
+              columns = 3;
+            } else if (constraints.maxWidth > 700) {
+              columns = 2;
+            }
+
+            return AnimatedSwitcher(
+              duration: Duration(seconds: 1),
+              child: MasonryGridView.count(
+                padding: const EdgeInsets.all(12),
+                crossAxisCount: columns,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  return OrderCard(doc: orders[index]);
+                },
+              ),
+            );
           },
         );
       },

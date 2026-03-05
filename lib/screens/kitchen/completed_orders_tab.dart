@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/session_completed_card.dart';
 
@@ -34,14 +35,32 @@ class CompletedOrdersTab extends StatelessWidget {
         // Convert map to list so it can be shown in ListView
         final sessionList = sessions.entries.toList();
 
-        return ListView.builder(
-          itemCount: sessionList.length,
-          itemBuilder: (context, index) {
-            // Each entry represents one session
-            final sessionId = sessionList[index].key;
-            final docs = sessionList[index].value;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            int columns = 1;
 
-            return SessionCompletedCard(sessionId: sessionId, docs: docs);
+            if (constraints.maxWidth > 1200) {
+              columns = 3;
+            } else if (constraints.maxWidth > 700) {
+              columns = 2;
+            }
+
+            return AnimatedSwitcher(
+              duration: Duration(seconds: 1),
+              child: MasonryGridView.count(
+                padding: const EdgeInsets.all(12),
+                crossAxisCount: columns,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                itemCount: sessionList.length,
+                itemBuilder: (context, index) {
+                  final sessionId = sessionList[index].key;
+                  final docs = sessionList[index].value;
+
+                  return SessionCompletedCard(sessionId: sessionId, docs: docs);
+                },
+              ),
+            );
           },
         );
       },
