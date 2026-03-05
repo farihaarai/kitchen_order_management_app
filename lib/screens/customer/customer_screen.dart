@@ -108,7 +108,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
               onCategorySelected: (category) {
                 setState(() {
                   _selectedCategory = category;
-                  // _selectedFoodType = null; // reset filter when category change
+                  _selectedFoodType = null; // reset filter when category change
                 });
               },
             ),
@@ -125,76 +125,109 @@ class _CustomerScreenState extends State<CustomerScreen> {
             ),
 
             StreamBuilder<QuerySnapshot>(
-              stream: FirestoreService().getCartStream(widget.tableNo),
-              builder: (context, snapshot) {
-                // convert firestore cart to map
-                Map<String, int> quantities = {};
+              stream: FirestoreService().getOrdersForTable(widget.tableNo),
+              builder: (context, orderSnapshot) {
+                int activeOrderCount = 0;
+                if (orderSnapshot.hasData) {
+                  final docs = orderSnapshot.data!.docs;
 
-                if (snapshot.hasData) {
-                  for (var doc in snapshot.data!.docs) {
-                    quantities[doc['id']] = (doc['quantity'] as num).toInt();
-                  }
+                  activeOrderCount = docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return data['status'] != 'paid';
+                  }).length;
                 }
 
-                final filteredItems = menuItems.where((item) {
-                  final categoryMatch = item.category == _selectedCategory;
-                  final typeMatch = _selectedFoodType == null
-                      ? true
-                      : item.type == _selectedFoodType;
-                  return categoryMatch && typeMatch;
-                }).toList();
+                bool limitReached = activeOrderCount >= 4;
 
-                return Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      int columns = 1;
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirestoreService().getCartStream(widget.tableNo),
+                  builder: (context, snapshot) {
+                    // convert firestore cart to map
+                    Map<String, int> quantities = {};
 
-                      if (constraints.maxWidth > 1000) {
-                        columns = 3;
-                      } else if (constraints.maxWidth > 600) {
-                        columns = 2;
+                    if (snapshot.hasData) {
+                      for (var doc in snapshot.data!.docs) {
+                        quantities[doc['id']] = (doc['quantity'] as num)
+                            .toInt();
                       }
+                    }
 
-                      return GridView.builder(
-                        padding: EdgeInsets.fromLTRB(8, 8, 8, 120),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: columns == 1
-                              ? 0.95
-                              : columns == 2
-                              ? 0.85
-                              : 0.8,
-                        ),
-                        itemCount: filteredItems.length,
-                        itemBuilder: (context, index) {
-                          final item = filteredItems[index];
+                    final filteredItems = menuItems.where((item) {
+                      final categoryMatch = item.category == _selectedCategory;
+                      final typeMatch = _selectedFoodType == null
+                          ? true
+                          : item.type == _selectedFoodType;
+                      return categoryMatch && typeMatch;
+                    }).toList();
 
-                          return Padding(
-                            padding: const EdgeInsets.all(6.0),
-                            child: MenuItemTile(
-                              item: item,
-                              quantity: quantities[item.id] ?? 0,
-                              onIncrease: () {
-                                FirestoreService().addToCart(widget.tableNo, {
-                                  'id': item.id,
-                                  'name': item.name,
-                                  'price': item.price,
-                                });
-                              },
-                              onDecrease: () {
-                                FirestoreService().decreaseCartItem(
-                                  widget.tableNo,
-                                  item.id,
-                                );
-                              },
-                            ),
+                    return Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          int columns = 1;
+
+                          if (constraints.maxWidth > 1000) {
+                            columns = 3;
+                          } else if (constraints.maxWidth > 600) {
+                            columns = 2;
+                          }
+
+                          return GridView.builder(
+                            padding: EdgeInsets.fromLTRB(8, 8, 8, 120),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: columns == 1
+                                      ? 0.95
+                                      : columns == 2
+                                      ? 0.85
+                                      : 0.8,
+                                ),
+                            itemCount: filteredItems.length,
+                            itemBuilder: (context, index) {
+                              final item = filteredItems[index];
+
+                              return Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: MenuItemTile(
+                                  item: item,
+                                  quantity: quantities[item.id] ?? 0,
+                                  onIncrease: () {
+                                    if (limitReached) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Maximum 4 orders allowed",
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    FirestoreService()
+                                        .addToCart(widget.tableNo, {
+                                          'id': item.id,
+                                          'name': item.name,
+                                          'price': item.price,
+                                        });
+                                  },
+                                  onDecrease: () {
+                                    FirestoreService().decreaseCartItem(
+                                      widget.tableNo,
+                                      item.id,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             ),

@@ -1,11 +1,20 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/order_card.dart';
 
-class ActiveOrdersTab extends StatelessWidget {
+class ActiveOrdersTab extends StatefulWidget {
   const ActiveOrdersTab({super.key});
 
+  @override
+  State<ActiveOrdersTab> createState() => _ActiveOrdersTabState();
+}
+
+class _ActiveOrdersTabState extends State<ActiveOrdersTab> {
+  final AudioPlayer player = AudioPlayer();
+
+  int _previousOrderCount = 0;
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -30,6 +39,14 @@ class ActiveOrdersTab extends StatelessWidget {
 
         // List of active order documents
         final orders = snapshot.data!.docs;
+
+        // play sound when new order arrives
+        if (orders.length > _previousOrderCount) {
+          player.play(AssetSource('sounds/order.mp3'));
+        }
+
+        // update count
+        _previousOrderCount = orders.length;
 
         // If no active orders
         if (orders.isEmpty) {

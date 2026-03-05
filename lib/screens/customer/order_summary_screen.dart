@@ -19,6 +19,44 @@ class OrderSummaryScreen extends StatefulWidget {
 }
 
 class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
+  Future<bool> confirmPlaceOrder() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Confirm Order"),
+          content: Text("Are you sure you want to place this order?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Color(0xFF2E7D32),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E7D32),
+              ),
+              child: const Text(
+                "Place Order",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
   // Calculate total price of current cart
   double getTotalAmount() {
     double total = 0;
@@ -29,6 +67,49 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
   }
 
   bool _isPlacing = false; // Prevent multiple clicks
+
+  void clearCart() async {
+    final confirm = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Clear Cart"),
+          content: const Text("Remove all items from the cart?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Color(0xFF2E7D32),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text(
+                "Clear",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await FirestoreService().clearCart(widget.tableNo);
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +130,14 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
             ),
           ],
         ),
+
+        actions: [
+          IconButton(
+            onPressed: clearCart,
+            icon: Icon(Icons.remove_shopping_cart_rounded),
+            tooltip: "Clear Cart",
+          ),
+        ],
       ),
 
       // ---------------- Order Items ----------------
@@ -56,23 +145,6 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         padding: const EdgeInsets.all(15.0),
         child: Column(
           children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.shopping_cart, color: Color(0xFF2E7D32)),
-                  SizedBox(width: 8),
-                  Text(
-                    "${widget.cartItems.length} items in cart",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
             // List of selected items
             Expanded(
               child: ListView.builder(
@@ -183,7 +255,14 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         child: SizedBox(
           height: 55,
           child: ElevatedButton(
-            onPressed: _isPlacing ? null : placeOrder,
+            onPressed: _isPlacing
+                ? null
+                : () async {
+                    bool confirmed = await confirmPlaceOrder();
+                    if (confirmed) {
+                      placeOrder();
+                    }
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2E7D32),
               foregroundColor: Colors.white,

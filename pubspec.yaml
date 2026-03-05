@@ -38,6 +38,7 @@ dependencies:
   go_router: ^17.1.0
   firebase_core: ^4.4.0
   cloud_firestore: ^6.1.2
+  audioplayers: ^6.6.0
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +69,7 @@ flutter:
     - assets/biryani/
     - assets/beverages/
     - assets/deserts/
+    - assets/sounds/order.mp3
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
