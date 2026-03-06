@@ -55,6 +55,7 @@ class MenuItemTile extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 /// NAME
@@ -109,7 +110,7 @@ class MenuItemTile extends StatelessWidget {
                                 horizontal: 16,
                                 vertical: 6,
                               ),
-                              minimumSize: const Size(60, 32),
+                              minimumSize: const Size(52, 28),
                             ),
                             child: const Text(
                               "ADD",
@@ -117,6 +118,7 @@ class MenuItemTile extends StatelessWidget {
                             ),
                           )
                         : Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: const Color(0xFF2E7D32),
@@ -124,29 +126,34 @@ class MenuItemTile extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove, size: 18),
-                                  onPressed: onDecrease,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    quantity.toString(),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                GestureDetector(
+                                  onTap: onDecrease,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: Icon(Icons.remove, size: 16),
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.add, size: 18),
-                                  onPressed: onIncrease,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+
+                                const SizedBox(width: 4),
+
+                                Text(
+                                  quantity.toString(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 4),
+
+                                GestureDetector(
+                                  onTap: onIncrease,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: Icon(Icons.add, size: 16),
+                                  ),
                                 ),
                               ],
                             ),

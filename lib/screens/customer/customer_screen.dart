@@ -6,7 +6,6 @@ import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_progress_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
-import 'package:kitchen_order_mgmt_app/screens/customer/receipt_screen.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/category_selector.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/menu_item_tile.dart';
@@ -22,51 +21,37 @@ class CustomerScreen extends StatefulWidget {
 
 class _CustomerScreenState extends State<CustomerScreen> {
   // Map<String, int> quantities = {};
-  String? _lastStatus;
+  // ignore: unused_field
   List<CartItem> _lastOrderItems = [];
+  // ignore: unused_field
   DateTime? _lastOrderTime;
   MenuCategory _selectedCategory = MenuCategory.starters;
   FoodType? _selectedFoodType;
+  final _scrollController = ScrollController();
+  bool _collapsed = false;
 
-  // int getQuantity(String id) {
-  //   return quantities[id] ?? 0;
-  // }
+  @override
+  void initState() {
+    super.initState();
 
-  // int getTotalItems() {
-  //   int total = 0;
-  //   for (var qty in quantities.values) {
-  //     total += qty;
-  //   }
-  //   return total;
-  // }
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 60 && !_collapsed) {
+        setState(() {
+          _collapsed = true;
+        });
+      } else if (_scrollController.offset <= 60 && _collapsed) {
+        setState(() {
+          _collapsed = false;
+        });
+      }
+    });
+  }
 
-  // void increase(String id) {
-  //   final currentQty = quantities[id] ?? 0;
-  //   quantities[id] = currentQty + 1;
-  //   setState(() {});
-  // }
-
-  // void decrease(String id) {
-  //   final currentQty = quantities[id] ?? 0;
-  //   if (currentQty > 1) {
-  //     quantities[id] = currentQty - 1;
-  //   } else {
-  //     quantities.remove(id); // remove when 0
-  //   }
-  //   setState(() {});
-  // }
-
-  // double getTotalPrice() {
-  //   double total = 0;
-
-  //   for (var item in menuItems) {
-  //     final qty = quantities[item.id] ?? 0;
-  //     if (qty > 0) {
-  //       total += item.price * qty;
-  //     }
-  //   }
-  //   return total;
-  // }
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,141 +83,151 @@ class _CustomerScreenState extends State<CustomerScreen> {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            SizedBox(height: 8),
-            CategorySelector(
-              selectedCategory: _selectedCategory,
-              onCategorySelected: (category) {
-                setState(() {
-                  _selectedCategory = category;
-                  _selectedFoodType = null; // reset filter when category change
-                });
-              },
-            ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                SizedBox(height: 8),
+                CategorySelector(
+                  selectedCategory: _selectedCategory,
+                  onCategorySelected: (category) {
+                    setState(() {
+                      _selectedCategory = category;
+                      _selectedFoodType =
+                          null; // reset filter when category change
+                    });
+                    _scrollController.jumpTo(0);
+                  },
+                ),
 
-            Divider(),
+                Divider(),
 
-            VegFilter(
-              selectedType: _selectedFoodType,
-              onchanged: (type) {
-                setState(() {
-                  _selectedFoodType = type;
-                });
-              },
-            ),
+                VegFilter(
+                  selectedType: _selectedFoodType,
+                  onchanged: (type) {
+                    setState(() {
+                      _selectedFoodType = type;
+                    });
+                    _scrollController.jumpTo(0);
+                  },
+                ),
 
-            StreamBuilder<QuerySnapshot>(
-              stream: FirestoreService().getOrdersForTable(widget.tableNo),
-              builder: (context, orderSnapshot) {
-                int activeOrderCount = 0;
-                if (orderSnapshot.hasData) {
-                  final docs = orderSnapshot.data!.docs;
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirestoreService().getOrdersForTable(widget.tableNo),
+                  builder: (context, orderSnapshot) {
+                    int activeOrderCount = 0;
+                    if (orderSnapshot.hasData) {
+                      final docs = orderSnapshot.data!.docs;
 
-                  activeOrderCount = docs.where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return data['status'] != 'paid';
-                  }).length;
-                }
-
-                bool limitReached = activeOrderCount >= 4;
-
-                return StreamBuilder<QuerySnapshot>(
-                  stream: FirestoreService().getCartStream(widget.tableNo),
-                  builder: (context, snapshot) {
-                    // convert firestore cart to map
-                    Map<String, int> quantities = {};
-
-                    if (snapshot.hasData) {
-                      for (var doc in snapshot.data!.docs) {
-                        quantities[doc['id']] = (doc['quantity'] as num)
-                            .toInt();
-                      }
+                      activeOrderCount = docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return data['status'] != 'paid';
+                      }).length;
                     }
 
-                    final filteredItems = menuItems.where((item) {
-                      final categoryMatch = item.category == _selectedCategory;
-                      final typeMatch = _selectedFoodType == null
-                          ? true
-                          : item.type == _selectedFoodType;
-                      return categoryMatch && typeMatch;
-                    }).toList();
+                    bool limitReached = activeOrderCount >= 4;
 
-                    return Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          int columns = 1;
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: FirestoreService().getCartStream(widget.tableNo),
+                      builder: (context, snapshot) {
+                        // convert firestore cart to map
+                        Map<String, int> quantities = {};
 
-                          if (constraints.maxWidth > 1000) {
-                            columns = 3;
-                          } else if (constraints.maxWidth > 600) {
-                            columns = 2;
+                        if (snapshot.hasData) {
+                          for (var doc in snapshot.data!.docs) {
+                            quantities[doc['id']] = (doc['quantity'] as num)
+                                .toInt();
                           }
+                        }
 
-                          return GridView.builder(
-                            padding: EdgeInsets.fromLTRB(8, 8, 8, 120),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: columns,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                  childAspectRatio: columns == 1
-                                      ? 0.95
-                                      : columns == 2
-                                      ? 0.85
-                                      : 0.8,
-                                ),
-                            itemCount: filteredItems.length,
-                            itemBuilder: (context, index) {
-                              final item = filteredItems[index];
+                        final filteredItems = menuItems.where((item) {
+                          final categoryMatch =
+                              item.category == _selectedCategory;
+                          final typeMatch = _selectedFoodType == null
+                              ? true
+                              : item.type == _selectedFoodType;
+                          return categoryMatch && typeMatch;
+                        }).toList();
 
-                              return Padding(
-                                padding: const EdgeInsets.all(6.0),
-                                child: MenuItemTile(
-                                  item: item,
-                                  quantity: quantities[item.id] ?? 0,
-                                  onIncrease: () {
-                                    if (limitReached) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Maximum 4 orders allowed",
-                                          ),
-                                        ),
-                                      );
-                                      return;
-                                    }
+                        return Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              int columns = 1;
 
-                                    FirestoreService()
-                                        .addToCart(widget.tableNo, {
-                                          'id': item.id,
-                                          'name': item.name,
-                                          'price': item.price,
-                                        });
-                                  },
-                                  onDecrease: () {
-                                    FirestoreService().decreaseCartItem(
-                                      widget.tableNo,
-                                      item.id,
-                                    );
-                                  },
-                                ),
+                              if (constraints.maxWidth > 1000) {
+                                columns = 3;
+                              } else if (constraints.maxWidth > 600) {
+                                columns = 2;
+                              }
+
+                              return GridView.builder(
+                                controller: _scrollController,
+                                padding: EdgeInsets.fromLTRB(8, 8, 8, 160),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                      childAspectRatio: columns == 1
+                                          ? 0.82
+                                          : columns == 2
+                                          ? 0.75
+                                          : 0.72,
+                                    ),
+                                itemCount: filteredItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = filteredItems[index];
+
+                                  return Padding(
+                                    padding: const EdgeInsets.all(6.0),
+                                    child: MenuItemTile(
+                                      item: item,
+                                      quantity: quantities[item.id] ?? 0,
+                                      onIncrease: () {
+                                        if (limitReached) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "Maximum 4 orders allowed",
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        FirestoreService()
+                                            .addToCart(widget.tableNo, {
+                                              'id': item.id,
+                                              'name': item.name,
+                                              'price': item.price,
+                                            });
+                                      },
+                                      onDecrease: () {
+                                        FirestoreService().decreaseCartItem(
+                                          widget.tableNo,
+                                          item.id,
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          _buildFloatingOrderIndicator(),
+        ],
       ),
 
       bottomNavigationBar: _buildStatusBar(),
@@ -248,7 +243,6 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
         Map<String, int> quantities = {};
 
-        // ---------- CART DATA ----------
         if (cartSnapshot.hasData) {
           for (var doc in cartSnapshot.data!.docs) {
             final qty = (doc['quantity'] as num).toInt();
@@ -260,311 +254,125 @@ class _CustomerScreenState extends State<CustomerScreen> {
           }
         }
 
-        // If cart has items → show View Order bar
-        if (totalItems > 0) {
-          return viewOrderBar(quantities, totalItems, totalPrice);
-        }
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) {
+            final slideAnimation = Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(animation);
 
-        // ---------- ORDER STATUS (your existing logic) ----------
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirestoreService().getOrdersForTable(widget.tableNo),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            final docs = snapshot.data!.docs;
-
-            final activeDocs = docs.where((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return data['status'] != 'paid';
-            }).toList();
-
-            if (activeDocs.isEmpty) return const SizedBox.shrink();
-
-            if (activeDocs.length > 1) return multiOrderBar();
-
-            final data = activeDocs.first.data() as Map<String, dynamic>;
-
-            _lastStatus = data['status'];
-            final Timestamp? ts = data['time'] as Timestamp?;
-            _lastOrderTime = ts?.toDate();
-
-            final items = (data['items'] as List?) ?? [];
-            _lastOrderItems = items.map((item) {
-              return CartItem(
-                item: menuItems.firstWhere((m) => m.id == item['id']),
-                quantity: (item['quantity'] as num).toInt(),
-              );
-            }).toList();
-
-            if (_lastStatus == 'ready') return readyBar();
-            if (_lastStatus == 'preparing') return preparingBar();
-            if (_lastStatus == 'pending') return pendingBar();
-
-            return const SizedBox.shrink();
+            return SlideTransition(position: slideAnimation, child: child);
           },
+          child: totalItems > 0
+              ? Container(
+                  key: const ValueKey("cartVisible"),
+                  child: viewOrderBar(quantities, totalItems, totalPrice),
+                )
+              : const SizedBox(key: ValueKey("cartHidden")),
         );
       },
     );
   }
 
-  Widget multiOrderBar() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.blue.shade600,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              const Icon(Icons.list_alt, color: Colors.white),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  "View your orders progress",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+  Widget _buildFloatingOrderIndicator() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirestoreService().getOrdersForTable(widget.tableNo),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final docs = snapshot.data!.docs;
+
+        final activeDocs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['status'] != 'paid';
+        }).toList();
+
+        if (activeDocs.isEmpty) return SizedBox.shrink();
+
+        String text;
+        IconData icon;
+        VoidCallback? onTap;
+
+        if (activeDocs.length > 1) {
+          text = "${activeDocs.length} Orders in progress";
+          icon = Icons.list_alt;
+
+          onTap = () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OrderProgressScreen(tableNo: widget.tableNo),
+              ),
+            );
+          };
+        } else {
+          final data = activeDocs.first.data() as Map<String, dynamic>;
+          final status = data['status'];
+
+          if (status == "pending") {
+            text = "Order placed";
+            icon = Icons.receipt_long;
+          } else if (status == "preparing") {
+            text = "Preparing your order";
+            icon = Icons.restaurant;
+          } else if (status == "ready") {
+            text = "Order ready";
+            icon = Icons.check_circle;
+          } else {
+            return const SizedBox.shrink();
+          }
+
+          onTap = () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OrderProgressScreen(tableNo: widget.tableNo),
+              ),
+            );
+          };
+        }
+
+        return Positioned(
+          bottom: 30,
+          right: 16,
+          child: GestureDetector(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E7D32),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
                   ),
-                ),
+                ],
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          OrderProgressScreen(tableNo: widget.tableNo),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue,
-                ),
-                child: const Text("View"),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget pendingBar() {
-    return Padding(
-      padding: EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade600,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              const Icon(Icons.receipt_long, color: Colors.white, size: 26),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  "Order Placed",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-
-              if (_lastOrderItems.isNotEmpty)
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptScreen(
-                          items: _lastOrderItems,
-                          tableNo: widget.tableNo,
-                          time: _lastOrderTime!,
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.grey.shade700,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    text,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
-                  child: Text(
-                    "View Bill",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget preparingBar() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.orange.shade600,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              const Icon(Icons.restaurant, color: Colors.white, size: 26),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  "Preparing your order",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
+                ],
               ),
-
-              if (_lastOrderItems.isNotEmpty)
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptScreen(
-                          items: _lastOrderItems,
-                          tableNo: widget.tableNo,
-                          time: _lastOrderTime!,
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.orange.shade700,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    "View Bill",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget readyBar() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Color.fromARGB(255, 87, 165, 91),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, -2),
             ),
-          ],
-        ),
-
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 26),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Text(
-                  "Order is ready",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-
-              const Spacer(),
-
-              if (_lastOrderItems.isNotEmpty)
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptScreen(
-                          items: _lastOrderItems,
-                          tableNo: widget.tableNo,
-                          time: _lastOrderTime!,
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF2E7D32),
-                    elevation: 0,
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text("View Bill"),
-                ),
-            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -574,7 +382,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
     double totalPrice,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
       child: Container(
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 87, 165, 91),
@@ -587,24 +395,23 @@ class _CustomerScreenState extends State<CustomerScreen> {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: SafeArea(
           top: false,
           child: Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "$totalItems item${totalItems > 1 ? 's' : ''}",
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  Text(
-                    "₹ ${totalPrice.toStringAsFixed(0)}",
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ],
+              Text(
+                "$totalItems item${totalItems > 1 ? 's' : ''}",
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              SizedBox(width: 10),
+              Text(
+                "₹ ${totalPrice.toStringAsFixed(0)}",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Spacer(),
               ElevatedButton(
@@ -634,9 +441,15 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF2E7D32),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 34),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: const Text(
-                  "View Order",
+                  "View",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -646,17 +459,4 @@ class _CustomerScreenState extends State<CustomerScreen> {
       ),
     );
   }
-
-  // List<CartItem> buildCartItems() {
-  //   List<CartItem> cart = [];
-
-  //   for (var item in menuItems) {
-  //     final qty = quantities[item.id] ?? 0;
-
-  //     if (qty > 0) {
-  //       cart.add(CartItem(item: item, quantity: qty));
-  //     }
-  //   }
-  //   return cart;
-  // }
 }

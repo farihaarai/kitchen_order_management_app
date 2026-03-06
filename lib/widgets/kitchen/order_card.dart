@@ -15,6 +15,8 @@ class OrderCard extends StatelessWidget {
     final tableNumber = (data['tableNumber'] as num?)?.toInt() ?? 0;
 
     final items = (data['items'] as List?) ?? [];
+    final visibleItems = items.take(5).toList();
+    final remaining = items.length - visibleItems.length;
 
     final Timestamp? ts = data['time'] is Timestamp
         ? data['time'] as Timestamp
@@ -49,19 +51,33 @@ class OrderCard extends StatelessWidget {
             // Items in order
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: items.map((item) {
-                final qty = (item['quantity'] as num?)?.toInt() ?? 0;
-                return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    "${item['name']} x$qty",
-                    style: TextStyle(fontSize: 15),
+              children: [
+                ...visibleItems.map((item) {
+                  final qty = (item['quantity'] as num?)?.toInt() ?? 0;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      "${item['name']} x$qty",
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  );
+                }),
+
+                if (remaining > 0)
+                  GestureDetector(
+                    onTap: () => _showFullOrder(context, tableNumber, items),
+                    child: Text(
+                      "+$remaining more",
+                      style: const TextStyle(
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                );
-              }).toList(),
+              ],
             ),
 
-            const SizedBox(height: 10),
+            const Spacer(),
 
             Container(
               padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -157,6 +173,127 @@ class OrderCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showFullOrder(BuildContext context, int tableNumber, List items) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// HEADER
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.table_restaurant,
+                      color: Color(0xFF2E7D32),
+                      size: 26,
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    Text(
+                      "Table $tableNumber",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+
+                const Divider(),
+
+                const SizedBox(height: 8),
+
+                /// ITEM LIST
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: items.map((item) {
+                        final qty = (item['quantity'] as num?)?.toInt() ?? 0;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item['name'],
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "x$qty",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// CLOSE BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "CLOSE",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

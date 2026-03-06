@@ -47,6 +47,10 @@ class SessionCompletedCard extends StatelessWidget {
       }
     }
 
+    final entries = combined.entries.toList();
+    final visibleItems = entries.take(5).toList();
+    final remaining = entries.length - visibleItems.length;
+
     // ------------------------------------------------------------
     // UI Card
     // ------------------------------------------------------------
@@ -68,7 +72,7 @@ class SessionCompletedCard extends StatelessWidget {
             const SizedBox(height: 8),
 
             // Combined item list
-            ...combined.entries.map((entry) {
+            ...visibleItems.map((entry) {
               final name = entry.key;
               final qty = entry.value['quantity'];
 
@@ -78,7 +82,21 @@ class SessionCompletedCard extends StatelessWidget {
               );
             }),
 
-            const SizedBox(height: 6),
+            if (remaining > 0)
+              GestureDetector(
+                onTap: () {
+                  _showFullSession(context, tableNo, combined);
+                },
+                child: Text(
+                  "+$remaining more",
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+            const Spacer(),
 
             // Session total amount
             Align(
@@ -116,6 +134,123 @@ class SessionCompletedCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showFullSession(
+    BuildContext context,
+    int tableNo,
+    Map<String, Map<String, dynamic>> combined,
+  ) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// HEADER
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.table_restaurant,
+                      color: Color(0xFF2E7D32),
+                      size: 28,
+                    ),
+                    const SizedBox(width: 8),
+
+                    Text(
+                      "Table $tableNo",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+
+                const Divider(),
+
+                const SizedBox(height: 8),
+
+                /// ITEM LIST
+                ...combined.entries.map((entry) {
+                  final name = entry.key;
+                  final qty = entry.value['quantity'];
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            "x$qty",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                const SizedBox(height: 16),
+
+                /// FOOTER BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "CLOSE",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
