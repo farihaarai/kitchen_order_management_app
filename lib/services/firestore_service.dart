@@ -260,6 +260,22 @@ class FirestoreService {
         });
   }
 
+  Stream<List<QueryDocumentSnapshot>> getSessionOrders(int tableNo) {
+    return _db
+        .collection('orders')
+        .where('tableNumber', isEqualTo: tableNo)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.where((doc) {
+            final data = doc.data();
+            final status = data['status'];
+            final isRedo = data['isRedo'] ?? false;
+
+            return status != 'paid' && isRedo == false;
+          }).toList();
+        });
+  }
+
   // ----------------SHARED CART-----------------
 
   // Add Item or increase item

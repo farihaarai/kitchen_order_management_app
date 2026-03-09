@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 
@@ -16,8 +17,8 @@ class SessionReceiptScreen extends StatelessWidget {
       ),
 
       // Listen to combined session items in real-time
-      body: StreamBuilder<Map<String, Map<String, dynamic>>>(
-        stream: FirestoreService().getSessionCombinedItems(tableNo),
+      body: StreamBuilder<List<QueryDocumentSnapshot>>(
+        stream: FirestoreService().getSessionOrders(tableNo),
 
         builder: (context, snapshot) {
           // Show loading while data is fetching
@@ -30,17 +31,25 @@ class SessionReceiptScreen extends StatelessWidget {
           //   "Burger": {price: 120, quantity: 3},
           //   "Pizza": {price: 250, quantity: 1}
           // }
-          final items = snapshot.data!;
+          final orders = snapshot.data!;
 
           // If no active session (all orders paid)
-          if (items.isEmpty) {
+          if (orders.isEmpty) {
             return const Center(child: Text("No active session"));
           }
 
           // Calculate total amount
           double total = 0;
-          for (var item in items.values) {
-            total += item['price'] * item['quantity'];
+
+          for (var doc in orders) {
+            final data = doc.data() as Map<String, dynamic>;
+            final items = (data['items'] as List?) ?? [];
+
+            for (var item in items) {
+              total +=
+                  (item['price'] as num).toDouble() *
+                  (item['quantity'] as num).toInt();
+            }
           }
 
           // ------------------------------------------------------------
@@ -85,26 +94,51 @@ class SessionReceiptScreen extends StatelessWidget {
                         // ------------------------------------------------
                         // Item list (combined from multiple orders)
                         // ------------------------------------------------
-                        ...items.entries.map((entry) {
-                          final name = entry.key;
-                          final price = entry.value['price'];
-                          final qty = entry.value['quantity'];
-                          final itemTotal = price * qty;
+                        ...orders.map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final orderNo = data['orderNo'];
+                          final items = (data['items'] as List?) ?? [];
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                Expanded(child: Text(name)),
-                                Text("Qty: $qty"),
-                                const SizedBox(width: 10),
-                                Text("₹ ${itemTotal.toStringAsFixed(0)}"),
-                              ],
-                            ),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 10),
+
+                              Text(
+                                "Order #$orderNo",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+
+                              const SizedBox(height: 5),
+
+                              ...items.map((item) {
+                                final name = item['name'];
+                                final price = (item['price'] as num).toDouble();
+                                final qty = (item['quantity'] as num).toInt();
+                                final itemTotal = price * qty;
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 3,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(child: Text("$name x$qty")),
+                                      Text("₹ ${itemTotal.toStringAsFixed(0)}"),
+                                    ],
+                                  ),
+                                );
+                              }),
+
+                              const Divider(),
+                            ],
                           );
                         }),
 
-                        const Divider(),
+                        const SizedBox(height: 10),
 
                         // Total amount
                         Row(
