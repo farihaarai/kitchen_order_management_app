@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/active_orders_tab.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/completed_orders_tab.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/paid_orders_tab.dart';
+import 'package:kitchen_order_mgmt_app/screens/kitchen/redo_orders_tab.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 
 // Main Kitchen Dashboard Screen
@@ -17,7 +18,7 @@ class KitchenScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       // Total number of tabs
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           // App theme color
@@ -110,6 +111,19 @@ class KitchenScreen extends StatelessWidget {
                   );
                 },
               ),
+
+              // ---------------- Redo tab -------------
+              StreamBuilder<int>(
+                stream: FirestoreService().getRedoOrdersCount(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+
+                  return Tab(
+                    // icon: const Icon(Icons.attach_money_rounded),
+                    text: "Redo ($count)",
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -128,6 +142,9 @@ class KitchenScreen extends StatelessWidget {
 
             // Tab 3 - Paid sessions grouped by sessionId
             PaidOrdersTab(),
+
+            // Tab 4 - Redo orders list
+            RedoOrdersTab(),
           ],
         ),
       ),

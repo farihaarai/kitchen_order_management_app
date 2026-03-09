@@ -18,6 +18,7 @@ class FirestoreService {
       'orderNo': order.orderNo.toInt(),
       'status': order.status.name, // pending / preparing / ready / paid
       'time': Timestamp.fromDate(order.time),
+      'isRedo': false,
 
       // Save items inside order
       'items': order.items.map((cartItem) {
@@ -332,5 +333,35 @@ class FirestoreService {
     for (var doc in snapshot.docs) {
       await doc.reference.delete();
     }
+  }
+
+  Future<void> createRedoOrder({
+    required Map<String, dynamic> originalData,
+    required List<Map<String, dynamic>> redoItems,
+  }) async {
+    await _db.collection('orders').add({
+      'tableNumber': originalData['tableNumber'],
+      'sessionId': originalData['sessionId'],
+      'orderNo': null,
+      'status': 'pending',
+      'time': Timestamp.now(),
+      'isRedo': true,
+      'items': redoItems,
+    });
+  }
+
+  Stream<QuerySnapshot> getRedoOrdersStream() {
+    return _db
+        .collection('orders')
+        .orderBy('time', descending: true)
+        .snapshots();
+  }
+
+  Stream<int> getRedoOrdersCount() {
+    return _db
+        .collection('orders')
+        .where('isRedo', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
   }
 }

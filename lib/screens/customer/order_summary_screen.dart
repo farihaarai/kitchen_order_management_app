@@ -300,10 +300,12 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
           .where('tableNumber', isEqualTo: widget.tableNo)
           .get();
 
-      // Active orders = status not paid (same session)
+      // Active orders = status not paid (same session) && not a redo order
       final activeOrders = snapshot.docs.where((doc) {
         final status = doc['status'];
-        return status != 'paid';
+        final isRedo = doc.data()['isRedo'] ?? false;
+
+        return status != 'paid' && isRedo == false;
       }).toList();
 
       String sessionId;

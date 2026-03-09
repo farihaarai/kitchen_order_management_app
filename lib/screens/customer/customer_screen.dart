@@ -123,7 +123,10 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
                       activeOrderCount = docs.where((doc) {
                         final data = doc.data() as Map<String, dynamic>;
-                        return data['status'] != 'paid';
+                        final status = data['status'];
+                        final isRedo = data['isRedo'] ?? false;
+
+                        return status != 'paid' && isRedo == false;
                       }).length;
                     }
 

@@ -47,6 +47,10 @@ class SessionPaidCard extends StatelessWidget {
     // ------------------------------------------------------------
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadiusGeometry.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

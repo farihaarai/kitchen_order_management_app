@@ -110,26 +110,62 @@ class SessionCompletedCard extends StatelessWidget {
             const SizedBox(height: 10),
 
             // ------------------------------------------------------------
-            // MARK PAID BUTTON
+            // MARK PAID BUTTON AND REDO BUTTON
             // ------------------------------------------------------------
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: () {
-                  FirestoreService().markSessionPaid(sessionId);
-                },
-                child: const Text(
-                  "MARK PAID",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 3,
+                    ),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text(
+                      "REDO",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    onPressed: () {
+                      _showRedoDialog(context, docs);
+                    },
                   ),
                 ),
-              ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 3,
+                    ),
+                    icon: const Icon(Icons.payments),
+                    label: const Text(
+                      "MARK PAID",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    onPressed: () {
+                      FirestoreService().markSessionPaid(sessionId);
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -249,6 +285,85 @@ class SessionCompletedCard extends StatelessWidget {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showRedoDialog(BuildContext context, List<QueryDocumentSnapshot> docs) {
+    List<Map<String, dynamic>> allItems = [];
+
+    for (var doc in docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final items = (data['items'] as List?) ?? [];
+
+      for (var item in items) {
+        allItems.add(item);
+      }
+    }
+
+    List<bool> selected = List.generate(allItems.length, (_) => false);
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: Text("Select items to redo"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return SingleChildScrollView(
+                child: Column(
+                  children: List.generate(allItems.length, (i) {
+                    final item = allItems[i];
+
+                    return CheckboxListTile(
+                      value: selected[i],
+                      title: Text("${item['name']} x${item['quantity']}"),
+                      onChanged: (v) {
+                        setState(() {
+                          selected[i] = v!;
+                        });
+                      },
+                    );
+                  }),
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                List<Map<String, dynamic>> redoItems = [];
+
+                for (int i = 0; i < allItems.length; i++) {
+                  if (selected[i]) {
+                    redoItems.add(allItems[i]);
+                  }
+                }
+
+                if (redoItems.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Select at least one item")),
+                  );
+                  return;
+                }
+
+                final data = docs.first.data() as Map<String, dynamic>;
+
+                await FirestoreService().createRedoOrder(
+                  originalData: data,
+                  redoItems: redoItems,
+                );
+
+                Navigator.pop(context);
+              },
+              child: Text("REDO"),
+            ),
+          ],
         );
       },
     );

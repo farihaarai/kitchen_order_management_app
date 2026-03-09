@@ -61,8 +61,9 @@ class OrderProgressScreen extends StatelessWidget {
                     final data =
                         activeDocs[index].data() as Map<String, dynamic>;
                     final status = data['status'];
-                    final orderNo = data['orderNo'] ?? (index + 1);
+                    final orderNo = data['orderNo'];
                     final items = (data['items'] as List?) ?? [];
+                    final isRedo = data['isRedo'] ?? false;
 
                     // -------- Order total --------
                     double orderTotal = 0;
@@ -77,6 +78,7 @@ class OrderProgressScreen extends StatelessWidget {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (isRedo) const SizedBox(width: 25),
                         // Timeline dot + line
                         Column(
                           children: [
@@ -105,7 +107,9 @@ class OrderProgressScreen extends StatelessWidget {
                             margin: const EdgeInsets.only(bottom: 20),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: isRedo
+                                  ? Colors.red.shade50
+                                  : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -116,12 +120,39 @@ class OrderProgressScreen extends StatelessWidget {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      "Order #$orderNo",
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          isRedo ? "↳ REDO" : "Order #$orderNo",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+
+                                        if (isRedo) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              "REDO",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(

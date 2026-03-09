@@ -38,11 +38,34 @@ class _ActiveOrdersTabState extends State<ActiveOrdersTab> {
         }
 
         // List of active order documents
-        final orders = snapshot.data!.docs;
+        final orders = snapshot.data!.docs.toList();
+
+        orders.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+
+          final aRedo = (aData['isRedo'] ?? false) == true;
+          final bRedo = (bData['isRedo'] ?? false) == true;
+
+          if (aRedo && !bRedo) return -1;
+          if (!aRedo && bRedo) return 1;
+
+          final ta = (a['time'] as Timestamp).toDate();
+          final tb = (b['time'] as Timestamp).toDate();
+
+          return tb.compareTo(ta);
+        });
 
         // play sound when new order arrives
         if (orders.length > _previousOrderCount) {
-          player.play(AssetSource('sounds/order.mp3'));
+          final newest = orders.first.data() as Map<String, dynamic>;
+          final isRedo = newest['isRedo'] ?? false;
+
+          if (isRedo) {
+            player.play(AssetSource('sounds/redo.mp3'));
+          } else {
+            player.play(AssetSource('sounds/order.mp3'));
+          }
         }
 
         // update count
