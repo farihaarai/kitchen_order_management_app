@@ -27,22 +27,23 @@ class SessionCompletedCard extends StatelessWidget {
     // Loop through each order
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
+
+      final isRedo = data['isRedo'] ?? false;
+      if (isRedo) continue; // skip redo orders
+
       final items = (data['items'] as List?) ?? [];
 
-      // Loop through items inside the order
       for (var item in items) {
         final name = item['name'];
         final price = (item['price'] as num).toDouble();
         final qty = (item['quantity'] as num).toInt();
 
-        // Combine quantities for same item
         if (combined.containsKey(name)) {
           combined[name]!['quantity'] += qty;
         } else {
           combined[name] = {'price': price, 'quantity': qty};
         }
 
-        // Add to session total
         total += price * qty;
       }
     }

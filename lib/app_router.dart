@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:kitchen_order_mgmt_app/screens/admin/admin_dashboard_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/welcome_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/kitchen_login_screen.dart';
 
@@ -26,6 +27,13 @@ final GoRouter appRouter = GoRouter(
         // }
 
         return WelcomeScreen(tableNo: tableNo!);
+      },
+    ),
+
+    GoRoute(
+      path: '/admin',
+      builder: (context, state) {
+        return const AdminDashboardScreen();
       },
     ),
   ],

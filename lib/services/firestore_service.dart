@@ -81,6 +81,7 @@ class FirestoreService {
     return _db
         .collection('orders')
         .where('status', isEqualTo: 'ready')
+        .where('isRedo', isEqualTo: false)
         .orderBy('time', descending: true)
         .snapshots();
   }
@@ -123,6 +124,9 @@ class FirestoreService {
 
       for (var doc in docs) {
         final data = doc.data() as Map<String, dynamic>;
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue; // ignore redo orders
         final items = (data['items'] as List?) ?? [];
 
         for (var item in items) {
@@ -369,7 +373,7 @@ class FirestoreService {
   Stream<QuerySnapshot> getRedoOrdersStream() {
     return _db
         .collection('orders')
-        .orderBy('time', descending: true)
+        .where('isRedo', isEqualTo: true)
         .snapshots();
   }
 
@@ -379,5 +383,100 @@ class FirestoreService {
         .where('isRedo', isEqualTo: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
+  }
+
+  // Admin Analytics Methods
+
+  // Get Sales Today
+  Stream<double> getSalesToday() {
+    final now = DateTime.now();
+
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    return _db
+        .collection('orders')
+        .where('status', isEqualTo: 'paid')
+        .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .snapshots()
+        .map((snapshot) {
+          double total = 0;
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            final isRedo = data['isRedo'] ?? false;
+
+            if (isRedo) continue;
+
+            final items = (data['items'] as List?) ?? [];
+
+            for (var item in items) {
+              final price = (item['price'] as num).toDouble();
+              final qty = (item['quantity'] as num).toInt();
+
+              total += price * qty;
+            }
+          }
+          return total;
+        });
+  }
+
+  // Orders Today
+  Stream<int> getOrdersToday() {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    return _db
+        .collection('orders')
+        .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .snapshots()
+        .map((snapshot) {
+          int count = 0;
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            final isRedo = data['isRedo'] ?? false;
+
+            if (!isRedo) count++;
+          }
+
+          return count;
+        });
+  }
+
+  // Active tables
+  Stream<int> getActiveTables() {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      final tables = <int>{};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final status = data['status'];
+        final table = data['tableNumber'];
+
+        if (status != 'paid') {
+          tables.add(table);
+        }
+      }
+
+      return tables.length;
+    });
+  }
+
+  // Completed Sessions
+  Stream<int> getCompletedSessions() {
+    return _db
+        .collection('orders')
+        .where('status', isEqualTo: 'paid')
+        .snapshots()
+        .map((snapshot) {
+          final sessions = <String>{};
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            sessions.add(data['sessionId']);
+          }
+
+          return sessions.length;
+        });
   }
 }

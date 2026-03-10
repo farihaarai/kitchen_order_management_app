@@ -21,8 +21,9 @@ class RedoOrdersTab extends StatelessWidget {
 
         final docs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['isRedo'] == true &&
-              (data['status'] == 'pending' || data['status'] == 'preparing');
+          return data['isRedo'] == true
+          // && data['status'] != 'paid'
+          ;
         }).toList();
 
         docs.sort((a, b) {
