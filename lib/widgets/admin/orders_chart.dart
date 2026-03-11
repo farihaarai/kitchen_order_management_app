@@ -2,17 +2,17 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
 
-class SalesChart extends StatelessWidget {
+class OrdersChart extends StatelessWidget {
   final DateTime? selectedDate;
-  const SalesChart({super.key, this.selectedDate});
+  const OrdersChart({super.key, this.selectedDate});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Map<int, double>>(
-      stream: FirestoreService().getHourlySales(selectedDate),
+    return StreamBuilder<Map<int, int>>(
+      stream: FirestoreService().getHourlyOrders(selectedDate),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: Text("No sales yet"));
+          return const Center(child: Text("No orders yet"));
         }
 
         final data = snapshot.data!;
@@ -21,7 +21,7 @@ class SalesChart extends StatelessWidget {
           ..sort((a, b) => a.key.compareTo(b.key));
 
         final spots = sortedEntries
-            .map((e) => FlSpot(e.key.toDouble(), e.value))
+            .map((e) => FlSpot(e.key.toDouble(), e.value.toDouble()))
             .toList();
 
         if (spots.isEmpty) {
@@ -32,7 +32,7 @@ class SalesChart extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Revenue by Hour",
+              "Orders by Hour",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
 
@@ -73,13 +73,13 @@ class SalesChart extends StatelessWidget {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 300,
-                          reservedSize: 70,
+                          interval: 1,
+                          reservedSize: 50,
                           getTitlesWidget: (value, meta) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 6),
                               child: Text(
-                                "₹${value.toInt()}",
+                                value.toInt().toString(),
                                 style: const TextStyle(fontSize: 11),
                               ),
                             );
@@ -117,7 +117,7 @@ class SalesChart extends StatelessWidget {
                         getTooltipItems: (spots) {
                           return spots.map((spot) {
                             return LineTooltipItem(
-                              "${spot.x.toInt()}h\n₹${spot.y.toInt()}",
+                              "${spot.x.toInt()}h\n${spot.y.toInt()} orders",
                               const TextStyle(color: Colors.white),
                             );
                           }).toList();
@@ -129,7 +129,7 @@ class SalesChart extends StatelessWidget {
                       LineChartBarData(
                         spots: spots,
                         isCurved: true,
-                        color: Colors.green,
+                        color: Colors.blue,
                         barWidth: 3,
                         dotData: FlDotData(show: true),
                       ),

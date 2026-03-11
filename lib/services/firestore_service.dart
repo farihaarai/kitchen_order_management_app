@@ -377,70 +377,103 @@ class FirestoreService {
         .snapshots();
   }
 
-  Stream<int> getRedoOrdersCount() {
+  Stream<int> getRedoOrdersCount(DateTime? date) {
     return _db
         .collection('orders')
         .where('isRedo', isEqualTo: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
-  }
-
-  // Admin Analytics Methods
-
-  // Get Sales Today
-  Stream<double> getSalesToday() {
-    final now = DateTime.now();
-
-    final startOfDay = DateTime(now.year, now.month, now.day);
-
-    return _db
-        .collection('orders')
-        .where('status', isEqualTo: 'paid')
-        .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .snapshots()
-        .map((snapshot) {
-          double total = 0;
-
-          for (var doc in snapshot.docs) {
-            final data = doc.data();
-            final isRedo = data['isRedo'] ?? false;
-
-            if (isRedo) continue;
-
-            final items = (data['items'] as List?) ?? [];
-
-            for (var item in items) {
-              final price = (item['price'] as num).toDouble();
-              final qty = (item['quantity'] as num).toInt();
-
-              total += price * qty;
-            }
-          }
-          return total;
-        });
-  }
-
-  // Orders Today
-  Stream<int> getOrdersToday() {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-
-    return _db
-        .collection('orders')
-        .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .snapshots()
         .map((snapshot) {
           int count = 0;
 
           for (var doc in snapshot.docs) {
             final data = doc.data();
-            final isRedo = data['isRedo'] ?? false;
 
-            if (!isRedo) count++;
+            final Timestamp ts = data['time'];
+            final orderDate = ts.toDate();
+
+            if (date != null) {
+              if (orderDate.year != date.year ||
+                  orderDate.month != date.month ||
+                  orderDate.day != date.day) {
+                continue;
+              }
+            }
+
+            count++;
           }
 
           return count;
         });
+  }
+
+  // Admin Analytics Methods
+
+  // Get Sales method
+  Stream<double> getSales(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      double total = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final status = data['status'];
+        if (status != 'paid') continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+
+        final items = (data['items'] as List?) ?? [];
+
+        for (var item in items) {
+          final price = (item['price'] as num).toDouble();
+          final qty = (item['quantity'] as num).toInt();
+
+          total += price * qty;
+        }
+      }
+
+      return total;
+    });
+  }
+
+  // get orders method
+  Stream<int> getOrders(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      int count = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+
+        count++;
+      }
+
+      return count;
+    });
   }
 
   // Active tables
@@ -478,5 +511,173 @@ class FirestoreService {
 
           return sessions.length;
         });
+  }
+
+  // Get top selling items
+  Stream<List<Map<String, dynamic>>> getTopSellingItems(DateTime? date) {
+    return _db
+        .collection('orders')
+        .where('status', isEqualTo: 'paid')
+        .snapshots()
+        .map((snapshot) {
+          Map<String, int> itemCounts = {};
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+
+            final isRedo = data['isRedo'] ?? false;
+            if (isRedo) continue;
+
+            final Timestamp ts = data['time'];
+            final orderDate = ts.toDate();
+
+            if (date != null) {
+              if (orderDate.year != date.year ||
+                  orderDate.month != date.month ||
+                  orderDate.day != date.day) {
+                continue;
+              }
+            }
+
+            final items = (data['items'] as List?) ?? [];
+
+            for (var item in items) {
+              final name = item['name'];
+              final qty = (item['quantity'] as num).toInt();
+
+              itemCounts[name] = (itemCounts[name] ?? 0) + qty;
+            }
+          }
+
+          final sorted = itemCounts.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+
+          return sorted
+              .take(3)
+              .map((e) => {"name": e.key, "qty": e.value})
+              .toList();
+        });
+  }
+
+  // get hourly sales
+  Stream<Map<int, double>> getHourlySales(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      Map<int, double> hourlySales = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final status = data['status'];
+        if (status != 'paid') continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+        final hour = orderDate.hour;
+
+        final items = (data['items'] as List?) ?? [];
+
+        double total = 0;
+
+        for (var item in items) {
+          final price = (item['price'] as num).toDouble();
+          final qty = (item['quantity'] as num).toInt();
+
+          total += price * qty;
+        }
+
+        hourlySales[hour] = (hourlySales[hour] ?? 0) + total;
+      }
+
+      print("Hourly sales: $hourlySales");
+      return hourlySales;
+    });
+  }
+
+  Stream<Map<int, int>> getHourlyOrders(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      Map<int, int> hourlyOrders = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+
+        final hour = orderDate.hour;
+
+        hourlyOrders[hour] = (hourlyOrders[hour] ?? 0) + 1;
+      }
+
+      return hourlyOrders;
+    });
+  }
+
+  // method to get daily sales trends
+  Stream<Map<int, double>> getDailySalesTrend() {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      Map<int, double> dailySales = {};
+
+      final now = DateTime.now();
+
+      // initialize last 7 days
+      for (int i = 6; i >= 0; i--) {
+        final day = now.subtract(Duration(days: i));
+        dailySales[day.weekday] = 0;
+      }
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final status = data['status'];
+        if (status != 'paid') continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        final nowMinus7 = now.subtract(const Duration(days: 6));
+
+        if (orderDate.isBefore(nowMinus7)) continue;
+
+        final items = (data['items'] as List?) ?? [];
+
+        double total = 0;
+
+        for (var item in items) {
+          final price = (item['price'] as num).toDouble();
+          final qty = (item['quantity'] as num).toInt();
+
+          total += price * qty;
+        }
+
+        dailySales[orderDate.weekday] =
+            (dailySales[orderDate.weekday] ?? 0) + total;
+      }
+      return dailySales;
+    });
   }
 }

@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/widgets/admin/daily_sales_chart.dart';
 import 'package:kitchen_order_mgmt_app/widgets/admin/metric_card.dart';
+import 'package:kitchen_order_mgmt_app/widgets/admin/orders_chart.dart';
+import 'package:kitchen_order_mgmt_app/widgets/admin/sales_chart.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  DateTime? selectedDate;
+
+  void pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2026),
+      lastDate: DateTime.now(),
+    );
+
+    if (date != null) {
+      setState(() {
+        selectedDate = date;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,35 +37,84 @@ class AdminDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Text(
-          "Admin Dashboard",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        titleSpacing: 20,
+        title: Row(
+          children: [
+            Icon(Icons.analytics, color: Colors.black),
+            SizedBox(width: 10),
+            Text(
+              "Restaurant Analytics",
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
         ),
       ),
 
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Metrics
-            const Text(
-              "Overview",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // const Icon(Icons.calendar_today, size: 16),
+                  const SizedBox(width: 8),
+
+                  Text(
+                    selectedDate == null
+                        ? "All Time"
+                        : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  GestureDetector(
+                    onTap: pickDate,
+                    child: const Icon(Icons.edit_calendar, size: 18),
+                  ),
+
+                  if (selectedDate != null)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedDate = null;
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Icon(Icons.close, size: 18),
+                      ),
+                    ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 16),
 
+            // Metrics
             GridView.count(
-              crossAxisCount: 2,
+              crossAxisCount: 4,
               shrinkWrap: true,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.7,
+              childAspectRatio: 3,
               children: [
                 StreamBuilder<double>(
-                  stream: FirestoreService().getSalesToday(),
+                  stream: FirestoreService().getSales(selectedDate),
                   builder: (context, snapshot) {
                     final sales = snapshot.data ?? 0;
 
@@ -54,7 +128,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 ),
 
                 StreamBuilder<int>(
-                  stream: FirestoreService().getOrdersToday(),
+                  stream: FirestoreService().getOrders(selectedDate),
                   builder: (context, snapshot) {
                     final orders = snapshot.data ?? 0;
 
@@ -76,28 +150,41 @@ class AdminDashboardScreen extends StatelessWidget {
                       title: "Active Tables",
                       value: tables.toString(),
                       icon: Icons.table_restaurant,
-                      color: Colors.orange,
-                    );
-                  },
-                ),
-
-                StreamBuilder<int>(
-                  stream: FirestoreService().getCompletedSessions(),
-                  builder: (context, snapshot) {
-                    final sessions = snapshot.data ?? 0;
-
-                    return MetricCard(
-                      title: "Sessions",
-                      value: sessions.toString(),
-                      icon: Icons.groups,
                       color: Colors.purple,
                     );
                   },
                 ),
+                StreamBuilder<int>(
+                  stream: FirestoreService().getRedoOrdersCount(selectedDate),
+                  builder: (context, snapshot) {
+                    final redo = snapshot.data ?? 0;
+
+                    return MetricCard(
+                      title: "Redo Orders",
+                      value: redo.toString(),
+                      icon: Icons.refresh,
+                      color: Colors.red,
+                    );
+                  },
+                ),
+
+                // StreamBuilder<int>(
+                //   stream: FirestoreService().getCompletedSessions(),
+                //   builder: (context, snapshot) {
+                //     final sessions = snapshot.data ?? 0;
+
+                //     return MetricCard(
+                //       title: "Sessions",
+                //       value: sessions.toString(),
+                //       icon: Icons.groups,
+                //       color: Colors.purple,
+                //     );
+                //   },
+                // ),
               ],
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
             /// SALES CHART
             const Text(
@@ -106,24 +193,63 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 12),
-
             Container(
-              height: 220,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(.05),
+                    color: Colors.black.withOpacity(.04),
                     blurRadius: 10,
                   ),
                 ],
               ),
-              child: const Center(child: Text("Sales Chart Coming Soon")),
-            ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 260,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: SalesChart(selectedDate: selectedDate),
+                    ),
+                  ),
 
-            const SizedBox(height: 30),
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Container(
+                      height: 260,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: OrdersChart(selectedDate: selectedDate),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Container(
+              height: 260,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const DailySalesChart(),
+            ),
+            const SizedBox(height: 24),
 
             /// TOP ITEMS
             const Text(
@@ -133,23 +259,24 @@ class AdminDashboardScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            _buildTopItem("Paneer Butter Masala", "45 orders"),
-            _buildTopItem("Garlic Naan", "38 orders"),
-            _buildTopItem("Chicken Biryani", "31 orders"),
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: FirestoreService().getTopSellingItems(selectedDate),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            const SizedBox(height: 30),
+                final items = snapshot.data!;
 
-            /// RECENT SESSIONS
-            const Text(
-              "Recent Sessions",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                return Column(
+                  children: items.map((item) {
+                    return _buildTopItem(item["name"], "${item["qty"]} orders");
+                  }).toList(),
+                );
+              },
             ),
 
-            const SizedBox(height: 12),
-
-            _buildSession("Table 4", "₹760"),
-            _buildSession("Table 2", "₹450"),
-            _buildSession("Table 7", "₹920"),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -157,31 +284,35 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildTopItem(String name, String orders) {
-    return Card(
-      elevation: 0,
-      child: ListTile(
-        title: Text(name),
-        trailing: Text(
-          orders,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-    );
-  }
+      child: Row(
+        children: [
+          const Icon(Icons.restaurant_menu, size: 20),
 
-  Widget _buildSession(String table, String amount) {
-    return Card(
-      elevation: 0,
-      child: ListTile(
-        leading: const Icon(Icons.table_restaurant),
-        title: Text(table),
-        trailing: Text(
-          amount,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
-        ),
+
+          Text(
+            orders,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+        ],
       ),
     );
   }

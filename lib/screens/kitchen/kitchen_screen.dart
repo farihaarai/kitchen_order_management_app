@@ -114,7 +114,7 @@ class KitchenScreen extends StatelessWidget {
 
               // ---------------- Redo tab -------------
               StreamBuilder<int>(
-                stream: FirestoreService().getRedoOrdersCount(),
+                stream: FirestoreService().getRedoOrdersCount(null),
                 builder: (context, snapshot) {
                   final count = snapshot.data ?? 0;
 
