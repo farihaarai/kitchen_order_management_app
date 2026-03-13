@@ -41,12 +41,33 @@ class OrderProgressScreen extends StatelessWidget {
             return const Center(child: Text("No active orders"));
           }
 
-          // -------- Sort by orderNo --------
-          activeDocs.sort((a, b) {
+          // ------- Separate normal & redo orders -------
+          final normalOrders = activeDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return !(data['isRedo'] ?? false);
+          }).toList();
+
+          final redoOrders = activeDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return (data['isRedo'] ?? false);
+          }).toList();
+
+          // -------- Sort normal orders by orderNo --------
+          normalOrders.sort((a, b) {
             final aNo = (a['orderNo'] ?? 0) as int;
             final bNo = (b['orderNo'] ?? 0) as int;
             return aNo.compareTo(bNo);
           });
+
+          // -------- Sort redo orders by orderNo --------
+          redoOrders.sort((a, b) {
+            final aTime = (a['time'] as Timestamp).toDate();
+            final bTime = (b['time'] as Timestamp).toDate();
+            return aTime.compareTo(bTime);
+          });
+
+          // combine lists
+          final sortedDocs = [...normalOrders, ...redoOrders];
 
           // -------- Session total --------
 
@@ -56,10 +77,10 @@ class OrderProgressScreen extends StatelessWidget {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(20),
-                  itemCount: activeDocs.length,
+                  itemCount: sortedDocs.length,
                   itemBuilder: (context, index) {
                     final data =
-                        activeDocs[index].data() as Map<String, dynamic>;
+                        sortedDocs[index].data() as Map<String, dynamic>;
                     final status = data['status'];
                     final orderNo = data['orderNo'];
                     final items = (data['items'] as List?) ?? [];
@@ -73,140 +94,166 @@ class OrderProgressScreen extends StatelessWidget {
                           (item['quantity'] as num).toInt();
                     }
 
-                    final isLast = index == activeDocs.length - 1;
+                    final isLast = index == sortedDocs.length - 1;
 
-                    return Row(
+                    final isFirstRedo =
+                        isRedo && (index == normalOrders.length);
+
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isRedo) const SizedBox(width: 25),
-                        // Timeline dot + line
-                        Column(
+                        if (isFirstRedo) ...[
+                          const SizedBox(height: 10),
+                          const Divider(thickness: 1.5),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              "Redo Orders",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: _getColor(status),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            if (!isLast)
-                              Container(
-                                width: 2,
-                                height: 80,
-                                color: Colors.grey.shade300,
-                              ),
-                          ],
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        // -------- Order Card --------
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: isRedo
-                                  ? Colors.red.shade50
-                                  : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            // Timeline dot + line
+                            Column(
                               children: [
-                                // Header
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          isRedo ? "↳ REDO" : "Order #$orderNo",
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: _getColor(status),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                if (!isLast)
+                                  Container(
+                                    width: 2,
+                                    height: 80,
+                                    color: Colors.grey.shade300,
+                                  ),
+                              ],
+                            ),
 
-                                        if (isRedo) ...[
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.red,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              "REDO",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
+                            const SizedBox(width: 12),
+
+                            // -------- Order Card --------
+                            Expanded(
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 20),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isRedo
+                                      ? Colors.red.shade50
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Header
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              isRedo ? "" : "Order #$orderNo",
+                                              style: const TextStyle(
+                                                fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
+
+                                            if (isRedo) ...[
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: const Text(
+                                                  "REDO",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
                                           ),
-                                        ],
+                                          decoration: BoxDecoration(
+                                            color: _getColor(
+                                              status,
+                                            ).withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _getText(status),
+                                            style: TextStyle(
+                                              color: _getColor(status),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _getColor(
-                                          status,
-                                        ).withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
+
+                                    const SizedBox(height: 8),
+
+                                    // Items
+                                    ...items.map((item) {
+                                      final qty = (item['quantity'] as num)
+                                          .toInt();
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 2,
+                                        ),
+                                        child: Text(
+                                          "${item['name']} x$qty",
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      );
+                                    }),
+
+                                    const SizedBox(height: 6),
+
+                                    // Order total
+                                    Align(
+                                      alignment: Alignment.centerRight,
                                       child: Text(
-                                        _getText(status),
-                                        style: TextStyle(
-                                          color: _getColor(status),
+                                        "₹ ${orderTotal.toStringAsFixed(0)}",
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-
-                                const SizedBox(height: 8),
-
-                                // Items
-                                ...items.map((item) {
-                                  final qty = (item['quantity'] as num).toInt();
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 2,
-                                    ),
-                                    child: Text(
-                                      "${item['name']} x$qty",
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  );
-                                }),
-
-                                const SizedBox(height: 6),
-
-                                // Order total
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    "₹ ${orderTotal.toStringAsFixed(0)}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     );

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
+import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
 import 'package:kitchen_order_mgmt_app/models/order.dart';
 
 // This service handles all Firestore operations for the app
@@ -27,6 +28,7 @@ class FirestoreService {
           'name': cartItem.item.name,
           'price': cartItem.item.price.toDouble(),
           'quantity': cartItem.quantity.toInt(),
+          'category': cartItem.item.category.name,
         };
       }).toList(),
     });
@@ -678,6 +680,134 @@ class FirestoreService {
             (dailySales[orderDate.weekday] ?? 0) + total;
       }
       return dailySales;
+    });
+  }
+
+  // method to get peak order hour
+  Stream<Map<String, dynamic>> getPeakOrderHour(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      Map<int, int> hourlyOrders = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+
+        final hour = orderDate.hour;
+
+        hourlyOrders[hour] = (hourlyOrders[hour] ?? 0) + 1;
+      }
+
+      int peakHour = 0;
+      int maxOrders = 0;
+
+      hourlyOrders.forEach((hour, count) {
+        if (count > maxOrders) {
+          maxOrders = count;
+          peakHour = hour;
+        }
+      });
+      return {"hour": peakHour, "orders": maxOrders};
+    });
+  }
+
+  // method to get most redo items
+  Stream<List<Map<String, dynamic>>> getMostRedoItems(DateTime? date) {
+    return _db
+        .collection('orders')
+        .where('isRedo', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+          Map<String, int> redoItems = {};
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+
+            final Timestamp ts = data['time'];
+            final orderDate = ts.toDate();
+
+            if (date != null) {
+              if (orderDate.year != date.year ||
+                  orderDate.month != date.month ||
+                  orderDate.day != date.day) {
+                continue;
+              }
+            }
+
+            final items = data['items'] ?? [];
+
+            for (var item in items) {
+              final name = item['name'];
+              final qty = (item['quantity'] as num).toInt();
+
+              redoItems[name] = (redoItems[name] ?? 0) + qty;
+            }
+          }
+
+          final sorted = redoItems.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+
+          return sorted
+              .take(3)
+              .map((e) => {"name": e.key, "qty": e.value})
+              .toList();
+        });
+  }
+
+  // method for categor distribution pie chart
+  Stream<Map<MenuCategory, int>> getFoodCategoryDistribution(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      Map<MenuCategory, int> categoryCounts = {
+        for (var c in MenuCategory.values) c: 0,
+      };
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+
+        final items = data['items'] ?? [];
+
+        for (var item in items) {
+          final categoryString = item['category'];
+
+          if (categoryString == null) continue;
+
+          final category = MenuCategory.values.firstWhere(
+            (c) => c.name == categoryString,
+          );
+
+          final qty = (item['quantity'] as num).toInt();
+
+          categoryCounts[category] = (categoryCounts[category] ?? 0) + qty;
+        }
+      }
+
+      return categoryCounts;
     });
   }
 }

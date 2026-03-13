@@ -57,15 +57,6 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     return result ?? false;
   }
 
-  // Calculate total price of current cart
-  double getTotalAmount() {
-    double total = 0;
-    for (var cartItem in widget.cartItems) {
-      total += cartItem.item.price * cartItem.quantity;
-    }
-    return total;
-  }
-
   bool _isPlacing = false; // Prevent multiple clicks
 
   void clearCart() async {
@@ -147,102 +138,190 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
           children: [
             // List of selected items
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: widget.cartItems.length,
-                itemBuilder: (context, index) {
-                  final item = widget.cartItems[index];
-                  final itemTotal = item.item.price * item.quantity;
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirestoreService().getCartStream(widget.tableNo),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  return Card(
-                    elevation: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          /// ITEM NAME
-                          Expanded(
-                            child: Text(
-                              item.item.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
+                  final docs = snapshot.data!.docs;
+
+                  double total = 0;
+
+                  for (var doc in docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final price = (data['price'] as num).toDouble();
+                    final qty = (data['quantity'] as num).toInt();
+
+                    total += price * qty;
+                  }
+
+                  if (docs.isEmpty) {
+                    return const Center(child: Text("Cart is empty"));
+                  }
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final data =
+                                docs[index].data() as Map<String, dynamic>;
+
+                            final name = data['name'];
+                            final price = (data['price'] as num).toDouble();
+                            final qty = (data['quantity'] as num).toInt();
+
+                            final itemTotal = price * qty;
+
+                            return Card(
+                              elevation: 2,
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ),
-                          ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    /// ITEM NAME
+                                    Expanded(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
 
-                          /// QUANTITY
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
+                                    /// QUANTITY
+                                    Row(
+                                      children: [
+                                        /// DECREASE BUTTON
+                                        InkWell(
+                                          onTap: () async {
+                                            await FirestoreService()
+                                                .decreaseCartItem(
+                                                  widget.tableNo,
+                                                  data['id'],
+                                                );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(
+                                              Icons.remove,
+                                              size: 18,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 8),
+
+                                        /// QUANTITY
+                                        Text(
+                                          qty.toString(),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 8),
+
+                                        /// INCREASE BUTTON
+                                        InkWell(
+                                          onTap: () async {
+                                            await FirestoreService()
+                                                .addToCart(widget.tableNo, {
+                                                  "id": data['id'],
+                                                  "name": name,
+                                                  "price": price,
+                                                });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFE8F5E9),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(
+                                              Icons.add,
+                                              size: 18,
+                                              color: Color(0xFF2E7D32),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(width: 12),
+
+                                    /// PRICE
+                                    Text(
+                                      "₹${itemTotal.toStringAsFixed(0)}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Color(0xFF2E7D32),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Total section
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              "x${item.quantity}",
-                              style: const TextStyle(
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Total Amount",
+                              style: TextStyle(
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          /// PRICE
-                          Text(
-                            "₹${itemTotal.toStringAsFixed(0)}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Color(0xFF2E7D32),
+                            Text(
+                              "₹ ${total.toStringAsFixed(0)}",
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   );
                 },
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Total section
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Total Amount",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    "₹ ${getTotalAmount().toStringAsFixed(0)}",
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

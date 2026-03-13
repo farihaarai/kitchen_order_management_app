@@ -6,6 +6,36 @@ class OrdersChart extends StatelessWidget {
   final DateTime? selectedDate;
   const OrdersChart({super.key, this.selectedDate});
 
+  double calculateInterval(double maxValue) {
+    const int labelCount = 6;
+
+    double interval = maxValue / (labelCount - 1);
+
+    if (interval <= 10) {
+      interval = interval.ceilToDouble();
+    } else if (interval <= 100) {
+      interval = (interval / 10).ceil() * 10;
+    } else if (interval <= 1000) {
+      interval = (interval / 100).ceil() * 100;
+    } else if (interval <= 5000) {
+      interval = (interval / 500).ceil() * 500;
+    } else {
+      interval = (interval / 1000).ceil() * 1000;
+    }
+
+    return interval;
+  }
+
+  String formatHour(double value) {
+    int hour = value.toInt();
+
+    final period = hour >= 12 ? "PM" : "AM";
+    int formattedHour = hour % 12;
+    if (formattedHour == 0) formattedHour = 12;
+
+    return "$formattedHour $period";
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<int, int>>(
@@ -28,6 +58,14 @@ class OrdersChart extends StatelessWidget {
           spots.add(const FlSpot(0, 0));
         }
 
+        double maxValue = spots.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+        if (maxValue == 0) {
+          maxValue = 5;
+        }
+
+        double interval = calculateInterval(maxValue);
+        double maxY = interval * 5;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,10 +84,12 @@ class OrdersChart extends StatelessWidget {
                     minX: 0,
                     maxX: 23,
                     minY: 0,
+                    maxY: maxY,
 
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: true,
+                      horizontalInterval: interval,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
                           color: Colors.grey.withOpacity(0.15),
@@ -73,7 +113,7 @@ class OrdersChart extends StatelessWidget {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 1,
+                          interval: interval,
                           reservedSize: 50,
                           getTitlesWidget: (value, meta) {
                             return Padding(
@@ -90,12 +130,16 @@ class OrdersChart extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 2,
+                          interval: 3,
                           getTitlesWidget: (value, meta) {
+                            if (value % 3 != 0) {
+                              return const SizedBox();
+                            }
+
                             return Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
-                                "${value.toInt()}h",
+                                formatHour(value),
                                 style: const TextStyle(fontSize: 11),
                               ),
                             );
@@ -117,7 +161,7 @@ class OrdersChart extends StatelessWidget {
                         getTooltipItems: (spots) {
                           return spots.map((spot) {
                             return LineTooltipItem(
-                              "${spot.x.toInt()}h\n${spot.y.toInt()} orders",
+                              "${formatHour(spot.x)} • ${spot.y.toInt()} orders",
                               const TextStyle(color: Colors.white),
                             );
                           }).toList();

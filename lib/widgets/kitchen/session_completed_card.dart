@@ -292,18 +292,32 @@ class SessionCompletedCard extends StatelessWidget {
   }
 
   void _showRedoDialog(BuildContext context, List<QueryDocumentSnapshot> docs) {
-    List<Map<String, dynamic>> allItems = [];
+    Map<String, Map<String, dynamic>> combined = {};
 
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
+
+      final isRedo = data['isRedo'] ?? false;
+      if (isRedo) continue; // skip previous redo orders
+
       final items = (data['items'] as List?) ?? [];
 
       for (var item in items) {
-        allItems.add(item);
+        final name = item['name'];
+        final qty = (item['quantity'] as num).toInt();
+        final price = (item['price'] as num).toDouble();
+
+        if (combined.containsKey(name)) {
+          combined[name]!['quantity'] += qty;
+        } else {
+          combined[name] = {'name': name, 'price': price, 'quantity': qty};
+        }
       }
     }
 
-    List<bool> selected = List.generate(allItems.length, (_) => false);
+    final allItems = combined.values.toList();
+
+    List<int> selected = List.generate(allItems.length, (_) => 0);
 
     showDialog(
       context: context,
@@ -317,14 +331,41 @@ class SessionCompletedCard extends StatelessWidget {
                   children: List.generate(allItems.length, (i) {
                     final item = allItems[i];
 
-                    return CheckboxListTile(
-                      value: selected[i],
-                      title: Text("${item['name']} x${item['quantity']}"),
-                      onChanged: (v) {
-                        setState(() {
-                          selected[i] = v!;
-                        });
-                      },
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item['name'],
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: () {
+                            if (selected[i] > 0) {
+                              setState(() {
+                                selected[i]--;
+                              });
+                            }
+                          },
+                        ),
+
+                        Text("${selected[i]}"),
+
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () {
+                            if (selected[i] < item['quantity']) {
+                              setState(() {
+                                selected[i]++;
+                              });
+                            }
+                          },
+                        ),
+
+                        // Text("/ ${item['quantity']}"),
+                      ],
                     );
                   }),
                 ),
@@ -341,8 +382,12 @@ class SessionCompletedCard extends StatelessWidget {
                 List<Map<String, dynamic>> redoItems = [];
 
                 for (int i = 0; i < allItems.length; i++) {
-                  if (selected[i]) {
-                    redoItems.add(allItems[i]);
+                  if (selected[i] > 0) {
+                    redoItems.add({
+                      'name': allItems[i]['name'],
+                      'price': allItems[i]['price'],
+                      'quantity': selected[i],
+                    });
                   }
                 }
 

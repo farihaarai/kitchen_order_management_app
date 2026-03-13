@@ -6,6 +6,36 @@ class SalesChart extends StatelessWidget {
   final DateTime? selectedDate;
   const SalesChart({super.key, this.selectedDate});
 
+  double calculateInterval(double maxValue) {
+    const int labelCount = 6;
+
+    double interval = maxValue / (labelCount - 1);
+
+    if (interval <= 10) {
+      interval = interval.ceilToDouble();
+    } else if (interval <= 100) {
+      interval = (interval / 10).ceil() * 10;
+    } else if (interval <= 1000) {
+      interval = (interval / 100).ceil() * 100;
+    } else if (interval <= 5000) {
+      interval = (interval / 500).ceil() * 500;
+    } else {
+      interval = (interval / 1000).ceil() * 1000;
+    }
+
+    return interval;
+  }
+
+  String formatHour(double value) {
+    int hour = value.toInt();
+
+    final period = hour >= 12 ? "PM" : "AM";
+    int formattedHour = hour % 12;
+    if (formattedHour == 0) formattedHour = 12;
+
+    return "$formattedHour $period";
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<int, double>>(
@@ -28,6 +58,15 @@ class SalesChart extends StatelessWidget {
           spots.add(const FlSpot(0, 0));
         }
 
+        double maxValue = spots.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+
+        if (maxValue == 0) {
+          maxValue = 100;
+        }
+
+        double interval = calculateInterval(maxValue);
+        double maxY = interval * 5;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,9 +85,11 @@ class SalesChart extends StatelessWidget {
                     minX: 0,
                     maxX: 23,
                     minY: 0,
+                    maxY: maxY,
 
                     gridData: FlGridData(
                       show: true,
+                      horizontalInterval: interval,
                       drawVerticalLine: true,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
@@ -56,6 +97,7 @@ class SalesChart extends StatelessWidget {
                           strokeWidth: 1,
                         );
                       },
+
                       getDrawingVerticalLine: (value) {
                         return FlLine(
                           color: Colors.grey.withOpacity(0.15),
@@ -73,13 +115,15 @@ class SalesChart extends StatelessWidget {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 300,
+                          interval: interval,
                           reservedSize: 70,
                           getTitlesWidget: (value, meta) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 6),
                               child: Text(
-                                "₹${value.toInt()}",
+                                value >= 1000
+                                    ? "₹${(value / 1000).toStringAsFixed(1)}k"
+                                    : "₹${value.toInt()}",
                                 style: const TextStyle(fontSize: 11),
                               ),
                             );
@@ -90,12 +134,16 @@ class SalesChart extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 2,
+                          interval: 3,
                           getTitlesWidget: (value, meta) {
+                            if (value % 3 != 0) {
+                              return const SizedBox();
+                            }
+
                             return Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
-                                "${value.toInt()}h",
+                                formatHour(value),
                                 style: const TextStyle(fontSize: 11),
                               ),
                             );
@@ -117,7 +165,7 @@ class SalesChart extends StatelessWidget {
                         getTooltipItems: (spots) {
                           return spots.map((spot) {
                             return LineTooltipItem(
-                              "${spot.x.toInt()}h\n₹${spot.y.toInt()}",
+                              "${formatHour(spot.x)} • ${spot.y >= 1000 ? "₹${(spot.y / 1000).toStringAsFixed(1)}k" : "₹${spot.y.toInt()}"}",
                               const TextStyle(color: Colors.white),
                             );
                           }).toList();
