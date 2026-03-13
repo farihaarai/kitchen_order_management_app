@@ -95,7 +95,7 @@ class _ActiveOrdersTabState extends State<ActiveOrdersTab> {
                   crossAxisCount: columns,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 1.6,
+                  childAspectRatio: 1.5,
                 ),
                 itemCount: orders.length,
                 itemBuilder: (context, index) {

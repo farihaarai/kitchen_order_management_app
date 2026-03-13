@@ -177,7 +177,7 @@ class SalesChart extends StatelessWidget {
                       LineChartBarData(
                         spots: spots,
                         isCurved: true,
-                        color: Colors.green,
+                        color: Colors.blue,
                         barWidth: 3,
                         dotData: FlDotData(show: true),
                       ),

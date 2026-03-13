@@ -322,94 +322,153 @@ class SessionCompletedCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) {
-        return AlertDialog(
-          title: Text("Select items to redo"),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return SingleChildScrollView(
-                child: Column(
-                  children: List.generate(allItems.length, (i) {
-                    final item = allItems[i];
-
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item['name'],
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-
-                        IconButton(
-                          icon: const Icon(Icons.remove),
-                          onPressed: () {
-                            if (selected[i] > 0) {
-                              setState(() {
-                                selected[i]--;
-                              });
-                            }
-                          },
-                        ),
-
-                        Text("${selected[i]}"),
-
-                        IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: () {
-                            if (selected[i] < item['quantity']) {
-                              setState(() {
-                                selected[i]++;
-                              });
-                            }
-                          },
-                        ),
-
-                        // Text("/ ${item['quantity']}"),
-                      ],
-                    );
-                  }),
-                ),
-              );
-            },
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
+          child: Container(
+            width: 500,
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Select items to redo",
+                  style: TextStyle(
+                    color: Color(0xFF2E7D32),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: List.generate(allItems.length, (i) {
+                          final item = allItems[i];
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item['name'],
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+
+                                //  Minus Button
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    if (selected[i] > 0) {
+                                      setState(() {
+                                        selected[i]--;
+                                      });
+                                    }
+                                  },
+                                ),
+
+                                Text(
+                                  "${selected[i]}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+
+                                //  Plus Button
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: Color(0xFF2E7D32),
+                                  ),
+                                  onPressed: () {
+                                    if (selected[i] < item['quantity']) {
+                                      setState(() {
+                                        selected[i]++;
+                                      });
+                                    }
+                                  },
+                                ),
+
+                                // Text("/ ${item['quantity']}"),
+                              ],
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Color(0xFF2E7D32),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () async {
+                        List<Map<String, dynamic>> redoItems = [];
+
+                        for (int i = 0; i < allItems.length; i++) {
+                          if (selected[i] > 0) {
+                            redoItems.add({
+                              'name': allItems[i]['name'],
+                              'price': allItems[i]['price'],
+                              'quantity': selected[i],
+                            });
+                          }
+                        }
+
+                        if (redoItems.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Select at least one item")),
+                          );
+                          return;
+                        }
+
+                        final data = docs.first.data() as Map<String, dynamic>;
+
+                        await FirestoreService().createRedoOrder(
+                          originalData: data,
+                          redoItems: redoItems,
+                        );
+
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(
+                        "REDO",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () async {
-                List<Map<String, dynamic>> redoItems = [];
-
-                for (int i = 0; i < allItems.length; i++) {
-                  if (selected[i] > 0) {
-                    redoItems.add({
-                      'name': allItems[i]['name'],
-                      'price': allItems[i]['price'],
-                      'quantity': selected[i],
-                    });
-                  }
-                }
-
-                if (redoItems.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Select at least one item")),
-                  );
-                  return;
-                }
-
-                final data = docs.first.data() as Map<String, dynamic>;
-
-                await FirestoreService().createRedoOrder(
-                  originalData: data,
-                  redoItems: redoItems,
-                );
-
-                Navigator.pop(context);
-              },
-              child: Text("REDO"),
-            ),
-          ],
+          ),
         );
       },
     );

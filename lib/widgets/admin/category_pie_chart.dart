@@ -24,12 +24,12 @@ class CategoryPieChart extends StatelessWidget {
         }
 
         final Map<MenuCategory, Color> categoryColors = {
-          MenuCategory.starters: Colors.orange,
-          MenuCategory.curries: Colors.red,
-          MenuCategory.breads: Colors.brown,
-          MenuCategory.biryani: Colors.green,
-          MenuCategory.beverages: Colors.blue,
-          MenuCategory.deserts: Colors.purple,
+          MenuCategory.starters: Color(0xFF2563EB),
+          MenuCategory.curries: Color(0xFF3B82F6),
+          MenuCategory.breads: Color(0xFF60A5FA),
+          MenuCategory.biryani: Color(0xFF93C5FD),
+          MenuCategory.beverages: Color(0xFFBFDBFE),
+          MenuCategory.deserts: Color(0xFF1D4ED8),
         };
 
         return Column(

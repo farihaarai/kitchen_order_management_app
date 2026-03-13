@@ -107,7 +107,7 @@ class DailySalesChart extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: Colors.orange,
+                      color: Colors.blue,
                       barWidth: 3,
                       dotData: FlDotData(show: true),
                     ),

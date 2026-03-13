@@ -810,4 +810,51 @@ class FirestoreService {
       return categoryCounts;
     });
   }
+
+  // method to get average order value
+  Stream<double> getAverageOrderValue(DateTime? date) {
+    return _db.collection('orders').snapshots().map((snapshot) {
+      double totalSales = 0;
+      int totalOrders = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        final isRedo = data['isRedo'] ?? false;
+        if (isRedo) continue;
+
+        final status = data['status'];
+        if (status != 'paid') continue;
+
+        final Timestamp ts = data['time'];
+        final orderDate = ts.toDate();
+
+        if (date != null) {
+          if (orderDate.year != date.year ||
+              orderDate.month != date.month ||
+              orderDate.day != date.day) {
+            continue;
+          }
+        }
+
+        final items = (data['items'] as List?) ?? [];
+
+        double orderTotal = 0;
+
+        for (var item in items) {
+          final price = (item['price'] as num).toDouble();
+          final qty = (item['quantity'] as num).toInt();
+
+          orderTotal += price * qty;
+        }
+
+        totalSales += orderTotal;
+        totalOrders++;
+      }
+
+      if (totalOrders == 0) return 0;
+
+      return totalSales / totalOrders;
+    });
+  }
 }

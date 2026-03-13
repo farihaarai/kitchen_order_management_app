@@ -130,7 +130,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ? 2
               : isTablet
               ? 3
-              : 5,
+              : 6,
           shrinkWrap: true,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
@@ -217,6 +217,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   value: "$hour:00 ",
                   icon: Icons.schedule,
                   color: Colors.orange,
+                );
+              },
+            ),
+
+            StreamBuilder<double>(
+              stream: FirestoreService().getAverageOrderValue(selectedDate),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox();
+
+                final avg = snapshot.data ?? 0;
+
+                return MetricCard(
+                  title: "Avg Order Value",
+                  value: "₹${avg.toStringAsFixed(0)}",
+                  icon: Icons.trending_up,
+                  color: Colors.teal,
                 );
               },
             ),

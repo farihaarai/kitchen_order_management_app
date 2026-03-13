@@ -243,7 +243,9 @@ class OrderProgressScreen extends StatelessWidget {
                                     Align(
                                       alignment: Alignment.centerRight,
                                       child: Text(
-                                        "₹ ${orderTotal.toStringAsFixed(0)}",
+                                        isRedo
+                                            ? ""
+                                            : "₹ ${orderTotal.toStringAsFixed(0)}",
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
