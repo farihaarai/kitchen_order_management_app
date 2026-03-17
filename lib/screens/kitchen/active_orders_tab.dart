@@ -1,7 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/order_card.dart';
 
 class ActiveOrdersTab extends StatefulWidget {
@@ -19,7 +19,7 @@ class _ActiveOrdersTabState extends State<ActiveOrdersTab> {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       // Listen to active orders in real-time
-      stream: FirestoreService().getActiveOrdersStream(),
+      stream: KitchenService().getActiveOrdersStream(),
 
       builder: (context, snapshot) {
         // If any error occurs while fetching data

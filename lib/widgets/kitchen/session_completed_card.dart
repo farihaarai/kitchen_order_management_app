@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 
 class SessionCompletedCard extends StatelessWidget {
   final String sessionId; // Unique session identifier
@@ -162,7 +162,7 @@ class SessionCompletedCard extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      FirestoreService().markSessionPaid(sessionId);
+                      KitchenService().markSessionPaid(sessionId);
                     },
                   ),
                 ),
@@ -448,7 +448,7 @@ class SessionCompletedCard extends StatelessWidget {
 
                         final data = docs.first.data() as Map<String, dynamic>;
 
-                        await FirestoreService().createRedoOrder(
+                        await KitchenService().createRedoOrder(
                           originalData: data,
                           redoItems: redoItems,
                         );

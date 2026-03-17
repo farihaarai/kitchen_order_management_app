@@ -3,7 +3,7 @@ import 'package:kitchen_order_mgmt_app/screens/kitchen/active_orders_tab.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/completed_orders_tab.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/paid_orders_tab.dart';
 import 'package:kitchen_order_mgmt_app/screens/kitchen/redo_orders_tab.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 
 // Main Kitchen Dashboard Screen
 // Shows 3 tabs:
@@ -67,7 +67,7 @@ class KitchenScreen extends StatelessWidget {
               // pending or preparing
               // -------------------------------
               StreamBuilder<int>(
-                stream: FirestoreService().getActiveOrdersCount(),
+                stream: KitchenService().getActiveOrdersCount(),
                 builder: (context, snapshot) {
                   final count = snapshot.data ?? 0;
 
@@ -84,7 +84,7 @@ class KitchenScreen extends StatelessWidget {
               // Count is based on unique sessionId
               // -------------------------------
               StreamBuilder<int>(
-                stream: FirestoreService().getReadySessionsCount(),
+                stream: KitchenService().getReadySessionsCount(),
                 builder: (context, snapshot) {
                   final count = snapshot.data ?? 0;
 
@@ -101,7 +101,7 @@ class KitchenScreen extends StatelessWidget {
               // Count is based on unique sessionId
               // -------------------------------
               StreamBuilder<int>(
-                stream: FirestoreService().getPaidSessionsCount(),
+                stream: KitchenService().getPaidSessionsCount(),
                 builder: (context, snapshot) {
                   final count = snapshot.data ?? 0;
 
@@ -114,7 +114,7 @@ class KitchenScreen extends StatelessWidget {
 
               // ---------------- Redo tab -------------
               StreamBuilder<int>(
-                stream: FirestoreService().getRedoOrdersCount(null),
+                stream: KitchenService().getRedoOrdersCount(null),
                 builder: (context, snapshot) {
                   final count = snapshot.data ?? 0;
 

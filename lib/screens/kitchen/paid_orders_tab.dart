@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/session_paid_card.dart';
 
 class PaidOrdersTab extends StatelessWidget {
@@ -10,7 +10,7 @@ class PaidOrdersTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<Map<String, List<QueryDocumentSnapshot>>>(
       // Listen to paid sessions in real-time
-      stream: FirestoreService().getPaidSessions(),
+      stream: KitchenService().getPaidSessions(),
 
       builder: (context, snapshot) {
         // If no data OR no paid sessions

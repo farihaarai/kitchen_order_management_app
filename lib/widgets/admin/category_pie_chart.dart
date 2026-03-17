@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/analytics_service.dart';
 
 class CategoryPieChart extends StatelessWidget {
   final DateTime? selectedDate;
@@ -11,7 +11,7 @@ class CategoryPieChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<MenuCategory, int>>(
-      stream: FirestoreService().getFoodCategoryDistribution(selectedDate),
+      stream: AnalyticsService().getFoodCategoryDistribution(selectedDate),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());

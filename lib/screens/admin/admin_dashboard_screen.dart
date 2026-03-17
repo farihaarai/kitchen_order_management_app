@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/analytics_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/admin/category_pie_chart.dart';
 import 'package:kitchen_order_mgmt_app/widgets/admin/daily_sales_chart.dart';
 import 'package:kitchen_order_mgmt_app/widgets/admin/metric_card.dart';
@@ -85,6 +86,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -138,7 +146,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           childAspectRatio: isMobile ? 2.5 : 3,
           children: [
             StreamBuilder<double>(
-              stream: FirestoreService().getSales(selectedDate),
+              stream: AnalyticsService().getSales(selectedDate),
               builder: (context, snapshot) {
                 final sales = snapshot.data ?? 0;
 
@@ -152,7 +160,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
 
             StreamBuilder<int>(
-              stream: FirestoreService().getOrders(selectedDate),
+              stream: AnalyticsService().getOrders(selectedDate),
               builder: (context, snapshot) {
                 final orders = snapshot.data ?? 0;
 
@@ -178,7 +186,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
 
             StreamBuilder<int>(
-              stream: FirestoreService().getActiveTables(),
+              stream: AnalyticsService().getActiveTables(),
               builder: (context, snapshot) {
                 final tables = snapshot.data ?? 0;
 
@@ -191,7 +199,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               },
             ),
             StreamBuilder<int>(
-              stream: FirestoreService().getRedoOrdersCount(selectedDate),
+              stream: KitchenService().getRedoOrdersCount(selectedDate),
               builder: (context, snapshot) {
                 final redo = snapshot.data ?? 0;
 
@@ -205,7 +213,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
 
             StreamBuilder<Map<String, dynamic>>(
-              stream: FirestoreService().getPeakOrderHour(selectedDate),
+              stream: AnalyticsService().getPeakOrderHour(selectedDate),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox();
 
@@ -222,7 +230,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
 
             StreamBuilder<double>(
-              stream: FirestoreService().getAverageOrderValue(selectedDate),
+              stream: AnalyticsService().getAverageOrderValue(selectedDate),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox();
 
@@ -239,7 +247,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
         /// SALES CHART
         const Text(
@@ -290,33 +298,103 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
         ),
-        const SizedBox(height: 24),
 
-        Container(
-          height: 260,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: const DailySalesChart(),
+        const SizedBox(height: 32),
+
+        const Text(
+          "Trends & Distribution",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
 
-        Container(
-          height: 300,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: CategoryPieChart(selectedDate: selectedDate),
-        ),
+        isMobile
+            ? Column(
+                children: [
+                  Container(
+                    height: 260,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const DailySalesChart(),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 300,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: CategoryPieChart(selectedDate: selectedDate),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 260,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const DailySalesChart(),
+                    ),
+                  ),
 
-        const SizedBox(height: 24),
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Container(
+                      height: 260,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: CategoryPieChart(selectedDate: selectedDate),
+                    ),
+                  ),
+                ],
+              ),
+
+        const SizedBox(height: 32),
 
         // Item insights
         isMobile
@@ -335,8 +413,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Expanded(child: _redoSection()),
                 ],
               ),
-
-        const SizedBox(height: 30),
       ],
     );
   }
@@ -348,6 +424,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,7 +441,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           const SizedBox(height: 12),
           StreamBuilder<List<Map<String, dynamic>>>(
-            stream: FirestoreService().getTopSellingItems(selectedDate),
+            stream: AnalyticsService().getTopSellingItems(selectedDate),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const SizedBox();
 
@@ -383,6 +466,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +483,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           const SizedBox(height: 12),
           StreamBuilder<List<Map<String, dynamic>>>(
-            stream: FirestoreService().getMostRedoItems(selectedDate),
+            stream: AnalyticsService().getMostRedoItems(selectedDate),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const SizedBox();
 
@@ -419,6 +509,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [

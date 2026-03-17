@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/session_completed_card.dart';
 
 class CompletedOrdersTab extends StatelessWidget {
@@ -9,7 +9,7 @@ class CompletedOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<String, List<QueryDocumentSnapshot>>>(
-      stream: FirestoreService().getReadySessions(),
+      stream: KitchenService().getReadySessions(),
 
       builder: (context, snapshot) {
         // If there is any error

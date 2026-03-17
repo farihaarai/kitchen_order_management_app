@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/session_receipt_screen.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/order_service.dart';
 
 class OrderProgressScreen extends StatelessWidget {
   final int tableNo;
@@ -28,7 +28,7 @@ class OrderProgressScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<List<QueryDocumentSnapshot>>(
-        stream: FirestoreService().getActiveSessionOrders(tableNo),
+        stream: OrderService().getActiveSessionOrders(tableNo),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -265,7 +265,7 @@ class OrderProgressScreen extends StatelessWidget {
 
               // -------- Session Total Bar --------
               StreamBuilder<double>(
-                stream: FirestoreService().getSessionTotal(tableNo),
+                stream: OrderService().getSessionTotal(tableNo),
                 builder: (context, totalSnapshot) {
                   final total = totalSnapshot.data ?? 0;
 

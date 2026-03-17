@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/kitchen/redo_order_card.dart';
 
 class RedoOrdersTab extends StatelessWidget {
@@ -9,7 +9,7 @@ class RedoOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirestoreService().getRedoOrdersStream(),
+      stream: KitchenService().getRedoOrdersStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/analytics_service.dart';
 
 class DailySalesChart extends StatelessWidget {
   const DailySalesChart({super.key});
@@ -8,7 +8,7 @@ class DailySalesChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<int, double>>(
-      stream: FirestoreService().getDailySalesTrend(),
+      stream: AnalyticsService().getDailySalesTrend(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());

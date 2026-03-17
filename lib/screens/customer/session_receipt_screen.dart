@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/order_service.dart';
 
 class SessionReceiptScreen extends StatelessWidget {
   final int tableNo; // Table number for which receipt is shown
@@ -18,7 +18,7 @@ class SessionReceiptScreen extends StatelessWidget {
 
       // Listen to combined session items in real-time
       body: StreamBuilder<List<QueryDocumentSnapshot>>(
-        stream: FirestoreService().getSessionOrders(tableNo),
+        stream: OrderService().getSessionOrders(tableNo),
 
         builder: (context, snapshot) {
           // Show loading while data is fetching

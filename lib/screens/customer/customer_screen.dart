@@ -6,7 +6,8 @@ import 'package:kitchen_order_mgmt_app/enums/menu_category.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_progress_screen.dart';
 import 'package:kitchen_order_mgmt_app/screens/customer/order_summary_screen.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/cart_service.dart';
+import 'package:kitchen_order_mgmt_app/services/order_service.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/category_selector.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/menu_item_tile.dart';
 import 'package:kitchen_order_mgmt_app/widgets/customer/veg_filter.dart';
@@ -115,7 +116,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 ),
 
                 StreamBuilder<QuerySnapshot>(
-                  stream: FirestoreService().getOrdersForTable(widget.tableNo),
+                  stream: OrderService().getOrdersForTable(widget.tableNo),
                   builder: (context, orderSnapshot) {
                     int activeOrderCount = 0;
                     if (orderSnapshot.hasData) {
@@ -133,7 +134,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                     bool limitReached = activeOrderCount >= 4;
 
                     return StreamBuilder<QuerySnapshot>(
-                      stream: FirestoreService().getCartStream(widget.tableNo),
+                      stream: CartService().getCartStream(widget.tableNo),
                       builder: (context, snapshot) {
                         // convert firestore cart to map
                         Map<String, int> quantities = {};
@@ -202,7 +203,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                           return;
                                         }
 
-                                        FirestoreService()
+                                        CartService()
                                             .addToCart(widget.tableNo, {
                                               'id': item.id,
                                               'name': item.name,
@@ -210,7 +211,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                             });
                                       },
                                       onDecrease: () {
-                                        FirestoreService().decreaseCartItem(
+                                        CartService().decreaseCartItem(
                                           widget.tableNo,
                                           item.id,
                                         );
@@ -239,7 +240,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   Widget _buildStatusBar() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirestoreService().getCartStream(widget.tableNo),
+      stream: CartService().getCartStream(widget.tableNo),
       builder: (context, cartSnapshot) {
         int totalItems = 0;
         double totalPrice = 0;
@@ -280,7 +281,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
 
   Widget _buildFloatingOrderIndicator() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirestoreService().getOrdersForTable(widget.tableNo),
+      stream: OrderService().getOrdersForTable(widget.tableNo),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox.shrink();

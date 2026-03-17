@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/analytics_service.dart';
 
 class OrdersChart extends StatelessWidget {
   final DateTime? selectedDate;
@@ -39,7 +39,7 @@ class OrdersChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Map<int, int>>(
-      stream: FirestoreService().getHourlyOrders(selectedDate),
+      stream: AnalyticsService().getHourlyOrders(selectedDate),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: Text("No orders yet"));

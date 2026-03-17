@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/kitchen_service.dart';
 
 class OrderCard extends StatefulWidget {
   final QueryDocumentSnapshot doc;
@@ -188,7 +188,7 @@ class _OrderCardState extends State<OrderCard>
                       padding: EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      FirestoreService().updateOrderStatus(docId, 'preparing');
+                      KitchenService().updateOrderStatus(docId, 'preparing');
                     },
                     child: const Text(
                       "START PREPARING",
@@ -208,7 +208,7 @@ class _OrderCardState extends State<OrderCard>
                       padding: EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      FirestoreService().updateOrderStatus(docId, 'ready');
+                      KitchenService().updateOrderStatus(docId, 'ready');
                     },
                     child: const Text(
                       "MARK READY",
@@ -229,7 +229,7 @@ class _OrderCardState extends State<OrderCard>
                       padding: EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      FirestoreService().updateOrderStatus(docId, 'paid');
+                      KitchenService().updateOrderStatus(docId, 'paid');
                     },
                     child: const Text(
                       "MARK PAID",

@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:flutter/material.dart';
 import 'package:kitchen_order_mgmt_app/models/cart_item.dart';
 import 'package:kitchen_order_mgmt_app/models/order.dart';
-import 'package:kitchen_order_mgmt_app/services/firestore_service.dart';
+import 'package:kitchen_order_mgmt_app/services/cart_service.dart';
+import 'package:kitchen_order_mgmt_app/services/order_service.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -103,7 +104,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     );
 
     if (confirm == true) {
-      await FirestoreService().clearCart(widget.tableNo);
+      await CartService().clearCart(widget.tableNo);
 
       if (mounted) {
         Navigator.pop(context);
@@ -343,8 +344,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         orderNo: orderNo,
       );
 
-      await FirestoreService().addOrder(order);
-      await FirestoreService().clearCart(widget.tableNo);
+      await OrderService().addOrder(order);
+      await CartService().clearCart(widget.tableNo);
 
       Navigator.pop(context, true);
     } catch (e) {
