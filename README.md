@@ -1,150 +1,166 @@
 # 🍽️ Kitchen Order Management App
 
-A **real-time restaurant ordering system** built with **Flutter + Firebase** that allows customers to place orders by scanning a QR code on their table and enables kitchen staff to manage and track orders efficiently.
+A **full-featured real-time restaurant ordering system** built with **Flutter + Firebase**, enabling seamless interaction between **customers, kitchen staff, and admin**.
 
-The system supports **multi-user shared carts**, **table sessions**, **multiple orders per session**, and **real-time order tracking**.
+Customers place orders via QR code, kitchen staff manage orders in real time, and admins monitor **analytics, sales, and performance insights**.
 
 ---
 
 # 🚀 Tech Stack
 
-### Frontend
+## Frontend
 - Flutter (Web + Mobile)
 - Material UI
+- Responsive Layouts
 
-### Backend
-- Firebase Firestore (Realtime database)
+## Backend
+- Firebase Firestore (Realtime Database)
 - Firebase Hosting
 
-### Architecture
-- StreamBuilder-based realtime updates
-- Firestore service layer
-- Modular widget architecture
+## State Management
+- BLoC (Business Logic Component)
+
+## Routing
+- GoRouter (URL-based navigation)
 
 ---
 
-# 📱 App Overview
+# 🧠 Architecture
 
-The application has **two main interfaces**:
-
-## 👨‍🍳 Kitchen Dashboard
-
-Used by kitchen staff to manage orders.
-
-Features:
-- View incoming orders in real time
-- Start preparing orders
-- Mark orders as ready
-- Handle payment per **table session**
-- View completed and paid sessions
+- BLoC-based state management for order handling
+- Service layer abstraction:
+  - CartService
+  - OrderService
+  - KitchenService
+  - AnalyticsService
+- StreamBuilder + Firestore for real-time updates
+- Modular widget-based UI
 
 ---
 
-## 🍽️ Customer Interface
+# 📱 Application Modules
 
-Customers scan a **QR code placed on the table** and can:
-
-- Browse the restaurant menu
-- Add items to a **shared table cart**
-- Place orders
-- Track order progress
-- View receipts and session bill
-
-Multiple customers at the same table can order **simultaneously**.
+The system consists of **3 main roles**:
 
 ---
 
-# ⭐ Core Features
+## 🍽️ 1. Customer Interface
 
-## 1️⃣ QR Code Table Ordering
-
-Customers scan a QR code that routes to:
+Accessible via QR code:
 
 ```
 /table/{tableNo}
 ```
 
-Example:
+### Features
 
-```
-/table/5
-```
-
-This loads the menu for **Table 5**.
-
----
-
-# 🛒 Shared Cart (Multi-User)
-
-Each table has a **shared cart stored in Firestore**.
-
-All users scanning the same QR code see the **same cart in real time**.
-
-### Example
-
-User A adds:
-
-```
-Burger x2
-```
-
-User B instantly sees:
-
-```
-Burger x2
-```
-
-Then adds:
-
-```
-Pizza x1
-```
-
-Cart becomes:
-
-```
-Burger x2
-Pizza x1
-```
-
-### Firestore Structure
-
-```
-carts/
-   {tableNo}
-      items/
-         {itemId}
-            id
-            name
-            price
-            quantity
-```
+- Browse categorized menu (Starters, Curries, Biryani, etc.)
+- Veg / Non-Veg filtering
+- Add items to **shared real-time cart**
+- View live cart updates
+- Place multiple orders in a session
+- Order progress tracking (timeline view)
+- Floating real-time order status indicator
+- View full session receipt
+- Responsive UI (mobile/tablet/web)
 
 ---
 
-# 🧾 Table Session System
+## 👨‍🍳 2. Kitchen Dashboard
 
-Each table operates using **sessions**.
+Accessible via:
 
-A session:
+```
+/kitchen
+```
 
-- Starts when the **first order is placed**
-- Allows multiple orders
-- Ends when **payment is marked**
+### Features
 
-### Session Rules
+- Kitchen login system
+- Real-time incoming orders
+- Order status management:
+  - Start Preparing
+  - Mark Ready
+- **Sound alerts for new orders 🔊**
+- Handles **redo orders separately**
+- Order prioritization:
+  - Redo orders shown first
+- Session-based order grouping
+- Clean card-based UI
+
+---
+
+## 📊 3. Admin Dashboard
+
+Accessible via:
+
+```
+/admin
+```
+
+### Features
+
+- 📅 Date-based filtering (All-time / specific date)
+- 💰 Sales analytics
+- 📦 Total & daily orders
+- 🍽️ Active tables tracking
+- 🔁 Redo orders tracking
+- ⏰ Peak order hours
+- 📊 Average order value
+
+### Visual Insights
+
+- Sales chart
+- Orders chart
+- Daily trends
+- Category distribution (pie chart)
+- Top selling items
+- Most redone items
+
+---
+
+# ⭐ Core Features
+
+---
+
+## 🔗 QR Code Table Ordering
+
+- Each table has a unique URL:
+  ```
+  /table/5
+  ```
+- Opens customer menu instantly
+
+---
+
+## 🛒 Shared Cart (Multi-User)
+
+- Real-time shared cart per table
+- Multiple users can add items simultaneously
+
+```
+carts/{tableNo}/items
+```
+
+---
+
+## 🧾 Table Session System
+
+Each table operates in **sessions**:
 
 | Rule | Description |
-|-----|-------------|
-| Max Orders | 4 orders per session |
-| New Session | Starts after payment |
-| Session Billing | Combines all orders |
-| Kitchen Workflow | Works per order |
-| Payment | Handled per session |
+|-----|------------|
+| Max Orders | 4 per session |
+| Session Start | First order |
+| Session End | After payment |
+| Billing | Combined |
+| Kitchen | Order-wise |
 
 ---
 
-# 📦 Firestore Order Structure
+## 📦 Firestore Data Structure
+
+### Orders
 
 ```
 orders/
@@ -153,192 +169,121 @@ orders/
       sessionId
       orderNo
       status
+      isRedo
       time
       items[]
 ```
 
-Example:
+---
+
+## 🔄 Order Status Flow
 
 ```
-tableNumber : 5
-sessionId   : t5_1719829212
-orderNo     : 2
-status      : preparing
-items       : [...]
+pending → preparing → ready → paid
 ```
 
 ---
 
-# 🔄 Order Status Flow
+## 🔁 Redo Order System
 
-```
-pending
-   ↓
-preparing
-   ↓
-ready
-   ↓
-paid
-```
+- Orders can be marked as **redo**
+- Redo orders:
+  - Highlighted in UI
+  - Shown separately in timeline
+  - Prioritized in kitchen
+  - Tracked in analytics
 
 ---
 
-# 📊 Kitchen Dashboard Tabs
+## 🔊 Kitchen Sound Alerts
 
-## Active Orders
-
-Shows:
-
-```
-pending
-preparing
-```
-
-Actions:
-- Start Preparing
-- Mark Ready
+- Plays sound when:
+  - New order arrives
+- Improves kitchen responsiveness
 
 ---
 
-## Completed Sessions
-
-Orders with status **ready** are grouped by session.
-
-Kitchen sees:
-
-```
-Table 5
-Burger x2
-Pizza x1
-
-Total: ₹560
-```
-
-Action:
-
-```
-MARK PAID
-```
-
----
-
-## Paid Sessions
-
-Displays previously completed sessions with total amount.
-
----
-
-# 📈 Customer Order Tracking
-
-Customers can see:
+## 📈 Real-Time Order Tracking
 
 ### Single Order
 
-Status bar shows:
-
 ```
-Order Placed
-Preparing
-Ready
+Order Placed → Preparing → Ready
 ```
-
----
 
 ### Multiple Orders
 
-Customers see:
-
-```
-View Orders Progress
-```
-
-Which opens a **timeline view**:
-
-```
-Order #1 → Ready
-Order #2 → Preparing
-Order #3 → Pending
-```
+- Timeline-based UI
+- Sorted by order number
+- Redo orders grouped separately
 
 ---
 
-# 🧾 Session Receipt
+## 🧾 Session Receipt
 
-Customers can view **combined bill** of all orders in the session.
+- Combines all orders
+- Real-time updates
+- Clean bill format
+- Shows:
+  - Order-wise breakdown
+  - Total amount
 
-Example:
+---
 
-```
-Burger x3
-Pizza x2
-Cold Coffee x2
+## 📊 Analytics Engine
 
-Total: ₹980
-```
+Powered by `AnalyticsService`
 
-The receipt updates **in real time**.
+### Metrics
+
+- Total Sales
+- Orders Count
+- Active Tables
+- Redo Orders
+- Peak Hours
+- Average Order Value
+
+### Insights
+
+- Top selling items
+- Most redone items
+- Category distribution
+- Daily trends
 
 ---
 
 # 🔄 Real-Time Architecture
 
-Customer Cart
-
-```
-carts/{tableNo}/items
-```
-
-Customer Orders
-
-```
-orders.where(tableNumber == tableNo)
-```
-
-Kitchen Active Orders
-
-```
-status in [pending, preparing]
-```
-
-Completed Sessions
-
-```
-status == ready
-group by sessionId
-```
-
-Paid Sessions
-
-```
-status == paid
-group by sessionId
-```
-
----
-
-# 🧠 Business Logic
-
-- Shared cart for multiple users per table
-- Maximum **4 orders per session**
-- Kitchen processes **orders individually**
-- Payment handled **per session**
-- Real-time synchronization via Firestore streams
+| Feature | Firestore Query |
+|--------|----------------|
+| Cart | `carts/{tableNo}/items` |
+| Orders | `orders.where(tableNumber)` |
+| Active Orders | `status in [pending, preparing]` |
+| Completed | `status == ready` |
+| Paid | `status == paid` |
 
 ---
 
 # 🖥️ Screens
 
-### Customer
+## Customer
+- Welcome screen
 - Menu screen
-- Shared cart
+- Cart view
 - Order summary
-- Order progress
-- Receipt screen
+- Order progress (timeline)
+- Session receipt
 
-### Kitchen
+## Kitchen
+- Login screen
 - Active orders
 - Completed sessions
 - Paid sessions
+
+## Admin
+- Analytics dashboard
+- Charts & insights
+- Date filtering
 
 ---
 
@@ -346,45 +291,49 @@ group by sessionId
 
 ```
 lib/
+ ├── app.dart
+ ├── app_router.dart
+ │
+ ├── blocs/
+ │   └── order/
+ │       ├── order_bloc.dart
+ │       ├── order_event.dart
+ │       └── order_state.dart
+ │
  ├── core/
- │   ├── data/
- │   │   ├── menu_data.dart
- │   │   └── category_data.dart
+ │   └── data/
+ │       ├── menu_data.dart
+ │       └── category_data.dart
  │
  ├── enums/
- │   ├── food_type.dart
- │   ├── menu_category.dart
- │   └── order_status.dart
- │
  ├── models/
- │   ├── cart_item.dart
- │   ├── menu_item.dart
- │   └── order.dart
  │
  ├── services/
- │   └── firestore_service.dart
+ │   ├── cart_service.dart
+ │   ├── order_service.dart
+ │   ├── kitchen_service.dart
+ │   └── analytics_service.dart
  │
  ├── screens/
  │   ├── customer/
- │   │   ├── customer_screen.dart
- │   │   ├── order_summary_screen.dart
- │   │   ├── order_progress_screen.dart
- │   │   └── receipt_screen.dart
- │   │
- │   └── kitchen/
- │       └── kitchen_screen.dart
+ │   ├── kitchen/
+ │   └── admin/
  │
  └── widgets/
      ├── customer/
-     │   ├── menu_item_tile.dart
-     │   ├── category_selector.dart
-     │   └── veg_filter.dart
-     │
-     └── kitchen/
-         ├── order_card.dart
-         ├── session_completed_card.dart
-         └── session_paid_card.dart
+     ├── kitchen/
+     └── admin/
 ```
+
+---
+
+# 🌐 Routing
+
+| Route | Description |
+|------|------------|
+| `/table/:tableNo` | Customer |
+| `/kitchen` | Kitchen login |
+| `/admin` | Admin dashboard |
 
 ---
 
@@ -397,7 +346,6 @@ Firebase Hosting
 ```
 
 Supports:
-
 - Flutter Web
 - Mobile
 
@@ -405,15 +353,19 @@ Supports:
 
 # 📌 Future Enhancements
 
-- Disable cart when order is preparing
-- Kitchen sound notifications
-- Order cancellation
-- Table analytics dashboard
-- Admin panel
-- Customer split billing
+- Role-based authentication (Admin/Kitchen)
+- Payment gateway integration
+- Push notifications
+- Table reservation system
+- Inventory management
+- AI-based demand prediction
 
 ---
 
 # 👨‍💻 Author
 
-Developed as a **Flutter + Firebase real-time restaurant ordering system** project.
+Developed as a **production-level Flutter + Firebase real-time restaurant system** with:
+
+- Customer ordering
+- Kitchen workflow management
+- Admin analytics dashboard
